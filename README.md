@@ -1,19 +1,25 @@
-# use-immediate-key
+# use-keys (WIP)
 
-Immediate mode pressed key status hook. It keeps track of what keys are down and you can query it at any time. It currently binds to window.
-
-A bad idea?
+Immediate mode hotkey hook
 
 ```js
-const key = useKey()
+const {selectAll, spaceKey} = useKeys({ selectAll: "meta+a", space: "space" })
 
-// later in your drag handler for instance
+// later in your render method
+
+if (selectAll.down) {
+  dispatch({ type: 'select-all' })
+}
+
+// or in a drag handler
 
 const handleDrag = (e) => {
-  if (key.space()) {
-    // pan canvas
+  if (space.pressed) {
+    // pan canvas while the space bar is pressed
   }
 }
 ```
+
+See source for more details.
 
 Demo: https://codesandbox.io/s/n4o5z6yk3l
