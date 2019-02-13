@@ -50,40 +50,55 @@ import React from 'react'
 // Non-goals:
 // - to be a better Mousetrap or react-hotkeys - rather enable a different
 // way to program with events (more: https://www.are.na/mihai-cernusca/immediate-mode-guis )
+//
+// Other key hooks I'm aware of:
+// https://github.com/haldarmahesh/use-key-hook
+//
 
-var KeyState = function(isDown = false, justReset = false) {
+// --
+
+const KeyState = function(isDown = false, justReset = false) {
   this.pressed = isDown //current (live) combo pressed state
   this.down = isDown //only true for one read after combo becomes valid
   this.up = justReset //only true for one read after combo is no longer valid
 }
 
+const _get = function(context, key) {
+  const expiredKey = `_${key}Expired`
+  const valueKey = `_${key}`
+  if (context[expiredKey]) {
+    return false
+  }
+  context[expiredKey] = true
+  return context[valueKey]
+}
+
+const _set = function(context, key, value) {
+  const expiredKey = `_${key}Expired`
+  const valueKey = `_${key}`
+  context[expiredKey] = false
+  context[valueKey] = value
+}
+
 Object.defineProperty(KeyState.prototype, 'down', {
   get: function() {
-    if (this._downExpired === true) {
-      return false
-    }
-    this._downExpired = true
-    return this._down
+    return _get(this, 'down')
   },
   set: function(value) {
-    this._downExpired = false
-    this._down = value
+    return _set(this, 'down', value)
   }
 })
 
 Object.defineProperty(KeyState.prototype, 'up', {
   get: function() {
-    if (this._upExpired === true) {
-      return false
-    }
-    this._upExpired = true
-    return this._up
+    return _get(this, 'up')
   },
   set: function(value) {
-    this._upExpired = false
-    this._up = value
+    return _set(this, 'up', value)
   }
 })
+
+// --
 
 const toCode = str => {
   switch (str.toLowerCase()) {
@@ -153,6 +168,8 @@ function initState(rulesMap) {
   })
   return keysToStatus
 }
+
+// --
 
 export const useKeys = function(rulesMap) {
   // Query live key state and some common key utility fns:
