@@ -3,7 +3,7 @@
 Immediate mode hotkey hook
 
 ```js
-const {selectAll, spaceKey} = useKeys({ selectAll: "meta+a", space: "space" })
+const {selectAll, space} = useKeys({ selectAll: "meta+a", space: "space" })
 
 // later in your render method
 
