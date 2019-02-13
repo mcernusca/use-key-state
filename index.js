@@ -236,13 +236,8 @@ export const useKeys = function(rulesMap) {
     // TODO Ignore key repeat - conf?
     if (keyMap.current[event.which]) {
       // Tricky one.. hack for now:
-      // handle it as a key up
+      // handle it as a key up (drop a frame)
       handleUp(event)
-      // undo it in the next frame..
-      setTimeout(() => {
-        keyMap.current[event.which] = true
-        updateState()
-      }, 0)
       return
     }
     keyMap.current[event.which] = true
