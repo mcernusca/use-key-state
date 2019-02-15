@@ -91,7 +91,7 @@ Non-Goals
 Notes
 -----------
 
-If you're still confused, this is essentially sugar over a callback API like: 
+If you're still confused, this is essentially hook sugar over a callback API like: 
 
 ```javascript
 useKey.on("a+s+d", (down) => {
