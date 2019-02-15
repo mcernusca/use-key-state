@@ -1,7 +1,7 @@
-usefulKeys
+usefulKeys (hook)
 ========================
 
-Keyboard events as values for React
+Keyboard events as values for React.
 
 Introduction
 ------------
