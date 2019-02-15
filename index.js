@@ -211,7 +211,6 @@ function initRulesMap(rulesMap, captureSet) {
 }
 
 function initState(rulesMap) {
-  console.log(rulesMap)
   const keysToStatus = {}
   Object.entries(rulesMap).forEach(([key, value]) => {
     keysToStatus[key] = new KeyState(false)
@@ -296,7 +295,6 @@ export const usefulKeys = function(rulesMap, config = defaultConfig) {
 
   const handleDown = event => {
     if (captureSet.current.has(event.which)) {
-      console.log('prevent default', event.which)
       event.preventDefault()
     }
 
