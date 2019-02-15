@@ -94,7 +94,7 @@ Notes
 If you're still confused, this is essentially hook sugar over a callback API like: 
 
 ```javascript
-useKey.on("a+s+d", (down) => {
+usefulKey.on("a+s+d", (down) => {
   this.setState({ "asdPressed": down }, () => {
     if (down) {
       // do the down thing
