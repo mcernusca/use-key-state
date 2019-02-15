@@ -1,18 +1,18 @@
 usefulKeys (hook)
 ========================
 
-Keyboard events as values for React.
+Keyboard events as values
 
 Introduction
 ------------
 
-Read this first: http://useful-keys.mihaicernusca.com
+Read this first: https://useful-keys.mihaicernusca.com
 
 Install
 -------
 
 ```text
-copypasta for now
+copypasta (for now)
 ```
 
 Usage
@@ -31,6 +31,8 @@ Use `pressed` if you want to know if the keys are currently down. This is always
 Use `down` or `up` if you want to know when the `keydown` and `keyup` events that caused the rule to match triggered. These values will be false after you read the value so be sure to capture it if you need it in multiple places!
 
 This is the equivalent of an event callback - *you read it, consider yourself notified.*
+
+This behavior is also what makes it safe to use inside your render method because it is guaranted to return false at next render.
 
 usefulKeys monitors key presses and when a rule matches, your component re-renders. To respond, in your render methods you simply check the key state property:
 
