@@ -1,9 +1,9 @@
-# use-keys (WIP)
+# usefulKeys
 
-Immediate mode hotkey hook
+Keyboard events as values for React. An alternative to callback based APIs.
 
 ```js
-const {selectAll, space} = useKeys({ selectAll: "meta+a", space: "space" })
+const {selectAll, space} = usefulKeys({ selectAll: "meta+a", space: "space" })
 
 // later in your render method
 
@@ -19,7 +19,5 @@ const handleDrag = (e) => {
   }
 }
 ```
-
-See source for more details.
 
 Demo: https://codesandbox.io/s/n4o5z6yk3l
