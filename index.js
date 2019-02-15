@@ -1,13 +1,22 @@
 import React from 'react'
 
+// Essentially sugar over:
+// useKey.on("esc", (down) => {
+//   this.setState({ "escPressed": down }, () => {
+//     if (down) {
+//       // handle esc key down here
+//     }
+//   })
+// })
+
 // API:
-// You pass useKeys a map of keys to hotkey rules:
+// You pass usefulKeys a map of keys to hotkey rules:
 //
-// {selectAllKey: "shift+a", spaceKey: "space"}
+// {selectAll: "shift+a", space: "space"}
 //
 // It returns an object with the same shape.
 //
-// { selectAllKeys, spaceKey } = useKeys({selectAllKey: "shift+a", spaceKey: "space"})
+// { selectAlls, space } = usefulKeys({selectAll: "shift+a", space: "space"})
 //
 // For every key you gave it - it associates a KeyState object that
 // has three properties: pressed, down and up.
@@ -21,19 +30,19 @@ import React from 'react'
 // places!
 // This is the equivalent of an event callback - you read it, consider yourself notified.
 //
-// useKeys monitors key presses and when a rule matches your component
+// usefulKeys monitors key presses and when a rule matches, your component
 // re-renders. To respond, in your render methods you simply check the
 // key state property:
 //
-// if (selectAllKey.down) {
-//  dispatch({type:'SELECT_ALL})
+// if (selectAll.down) {
+//  dispatch({type:'SELECT_ALL'})
 // }
 //
 // The pressed property is appropriate to use if you have your own render
 // loop or inside other event handlers such as a drag handler:
 //
 // onDrag =(e) => {
-//  if(spaceKey.pressed) {
+//  if(space.pressed) {
 //      panCanvas(e)
 //   }
 // }
@@ -41,20 +50,21 @@ import React from 'react'
 // That's it!
 
 // Goals:
-// - simple key bindings w/o callbacks - immediate mode events:
-// See: https://docs.unity3d.com/ScriptReference/Input.GetKeyDown.html
-// - add ability to query the state of the keyboard (does bookeeping)
-// - TODO: be able to bind to a particular subtree
-// - TODO: basic configuration {keyRepeat, preventDefault}
-//
+// - simple key bindings w/o callbacks (immediate mode key events)
+// - add ability to query the state of the keyboard (bypass react state)
+// - capture events (pass ,capture at the end of the rule)
+// - basic configuration ({ keyRepeat: true } by default)
+// - TODO: be able to bind to a particular subtree (return bind methods)
+// - TODO: filter events that originate from interative elements (inputs)
+// - TODO: accept an array of rules for same key ['meta+c', 'ctrl+c'] or 'meta+c, ctrl+c'
+// - TODO: investigate the performance costs of not having a singleton event handler (applicable to global bindings only)
+
 // Non-goals:
-// - to be a better Mousetrap or react-hotkeys - rather enable a different
-// way to program with events (more: https://www.are.na/mihai-cernusca/immediate-mode-guis )
+// - to necessarily be a better mousetrap, hotkeys.js  or react-hotkeys - rather enable a different
+// way to program with key events
 //
 // Other key hooks I'm aware of:
 // https://github.com/haldarmahesh/use-key-hook
-//
-
 // --
 
 const KeyState = function(isDown = false, justReset = false) {
@@ -102,7 +112,10 @@ Object.defineProperty(KeyState.prototype, 'up', {
 
 const toCode = str => {
   switch (str.toLowerCase()) {
+    case 'tab':
+      return 9
     case 'enter':
+    case 'return':
       return 13
     case 'shift':
       return 16
@@ -141,6 +154,12 @@ const toCode = str => {
 }
 
 const char = (input, down) => {
+  const { code, needsShift } = convertChar(input)
+  const isDown = down(code)
+  return needsShift ? isDown && down(toCode('shift')) : isDown
+}
+
+const convertChar = input => {
   let needsShift = false
   let code = input
   code = toCode(input)
@@ -148,20 +167,51 @@ const char = (input, down) => {
     needsShift = input === input.toUpperCase()
     code = input.toUpperCase().charCodeAt(0)
   }
-  const isDown = down(code)
-  return needsShift ? isDown && down(toCode('shift')) : isDown
+  return { code: code, needsShift: needsShift }
 }
 
-const rule = (rule, down) => {
+const parseRule = rule => {
+  return rule.split('+').map(str => str.trim())
+}
+
+const matchRule = (rule, down) => {
   if (typeof rule === 'string') {
-    const parts = rule.split('+')
-    const results = parts.map(str => char(str.trim(), down))
+    const parts = parseRule(rule)
+    const results = parts.map(str => char(str, down))
     return results.every(r => r === true)
   }
   return down(rule)
 }
 
+function extractCaptureFlag(rule) {
+  if (typeof rule === 'string') {
+    const parts = rule.split(',')
+    if (parts[1] && parts[1].trim() === 'capture') {
+      return { rule: parts[0].trim(), needsCapture: true }
+    }
+  }
+  return { rule: rule, needsCapture: false }
+}
+
+function initRulesMap(rulesMap, captureSet) {
+  // extract capture set from rules
+  const cleanMap = {}
+  Object.entries(rulesMap).forEach(([key, value]) => {
+    const { rule, needsCapture } = extractCaptureFlag(value)
+    if (needsCapture) {
+      const parts = parseRule(rule)
+      parts.forEach(str => {
+        const { code } = convertChar(str)
+        captureSet.add(code)
+      })
+    }
+    cleanMap[key] = rule
+  })
+  return cleanMap
+}
+
 function initState(rulesMap) {
+  console.log(rulesMap)
   const keysToStatus = {}
   Object.entries(rulesMap).forEach(([key, value]) => {
     keysToStatus[key] = new KeyState(false)
@@ -171,12 +221,16 @@ function initState(rulesMap) {
 
 // --
 
-export const useKeys = function(rulesMap) {
+const defaultConfig = {
+  keyRepeat: true
+}
+
+export const usefulKeys = function(rulesMap, config = defaultConfig) {
   // Query live key state and some common key utility fns:
   const query = React.useMemo(
     () => ({
       pressed: input => {
-        return rule(input, down)
+        return matchRule(input, down)
       },
       space: () => {
         return down(toCode('space'))
@@ -203,14 +257,22 @@ export const useKeys = function(rulesMap) {
     []
   )
 
+  // Set of key codes to capture
+  const captureSet = React.useRef(new Set([]))
+  // Maintain a clean copy of the rules map passed in
+  const cleanRulesMap = React.useRef({})
+  // Keep track of what keys are down, currently bound to window
+  const keyMap = React.useRef({})
+
   // This gets passed back to the caller and is updated
   // once any hotkey rule matches or stops matching
   const [state, setState] = React.useState(() => {
-    return { ...initState(rulesMap), ...query }
+    cleanRulesMap.current = initRulesMap(rulesMap, captureSet.current)
+    return {
+      ...initState(cleanRulesMap.current),
+      ...query
+    }
   })
-
-  // Keep track of what keys are down, currently bound to window
-  const keyMap = React.useRef({})
 
   const down = code => {
     return keyMap.current[code] || false
@@ -219,8 +281,8 @@ export const useKeys = function(rulesMap) {
   const updateState = () => {
     setState(prevState => {
       const tempState = { ...prevState }
-      Object.entries(rulesMap).forEach(([key, value]) => {
-        const matched = rule(value, down)
+      Object.entries(cleanRulesMap.current).forEach(([key, value]) => {
+        const matched = matchRule(value, down)
         if (prevState[key].pressed !== matched) {
           const up = prevState[key].pressed && !matched
           tempState[key] = new KeyState(matched, up)
@@ -233,10 +295,13 @@ export const useKeys = function(rulesMap) {
   }
 
   const handleDown = event => {
-    // TODO Ignore key repeat - conf?
-    if (keyMap.current[event.which]) {
-      // Tricky one.. hack for now:
-      // handle it as a key up (drop a frame)
+    if (captureSet.current.has(event.which)) {
+      console.log('prevent default', event.which)
+      event.preventDefault()
+    }
+
+    if (config.keyRepeat && keyMap.current[event.which]) {
+      // handle it as a key up (drop every other frame, hack)
       handleUp(event)
       return
     }
