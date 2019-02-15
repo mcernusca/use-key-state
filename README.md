@@ -11,7 +11,7 @@ Read this first: http://useful-keys.mihaicernusca.com
 Install
 -------
 
-```bash
+```text
 copypasta for now
 ```
 
