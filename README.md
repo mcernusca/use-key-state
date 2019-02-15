@@ -12,7 +12,7 @@ Install
 -------
 
 ```bash
-copypasta
+copypasta for now
 ```
 
 Usage
