@@ -1,4 +1,4 @@
-usefulKeys (hook)
+use-key-state
 ========================
 
 Keyboard events as values
@@ -6,7 +6,7 @@ Keyboard events as values
 Introduction
 ------------
 
-Read this first: https://useful-keys.mihaicernusca.com
+Read this first: https://use-key-state.mihaicernusca.com
 
 Example: https://codesandbox.io/s/n4o5z6yk3l
 
@@ -23,7 +23,7 @@ Usage
 Pass it a map of hotkey rules and it hands back one of the same shape:
 
 ```javascript
-const { asd } = usefulKeys({ asd: 'a+s+d' })
+const { asd } = useKeyState({ asd: 'a+s+d' })
 ```
 
 The values are state objects with three boolean properties: `pressed`, `down` and `up`. Your component will re-render only when a rule starts or stops matching.
@@ -36,7 +36,7 @@ This is the equivalent of an event callback - *you read it, consider yourself no
 
 This behavior is also what makes it safe to use inside your render method because it is guaranted to return false at next render.
 
-usefulKeys monitors key presses and when a rule matches, your component re-renders. To respond, in your render methods you simply check the key state property:
+useKeyState monitors key presses and when a rule matches, your component re-renders. To respond, in your render methods you simply check the key state property:
 
 ```javascript
 if (asd.down) {
@@ -58,10 +58,10 @@ onDrag = (e) => {
 
 ### Capture events
 
-By default usefulKeys doesn't capture events. To do so, simply append `,capture` at the end of your rule:
+By default useKeyState doesn't capture events. To do so, simply append `,capture` at the end of your rule:
 
 ```javascript
-const { asd } = usefulKeys({ asd: 'a+s+d,capture' })
+const { asd } = useKeyState({ asd: 'a+s+d,capture' })
 ```
 
 That's it!
@@ -98,7 +98,7 @@ Notes
 If you're still confused, this is essentially hook sugar over a callback API like: 
 
 ```javascript
-usefulKeys.on("a+s+d", (down) => {
+KeyState.on("a+s+d", (down) => {
   this.setState({ "asdPressed": down }, () => {
     if (down) {
       // do the down thing
