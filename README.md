@@ -8,6 +8,8 @@ Introduction
 
 Read this first: https://useful-keys.mihaicernusca.com
 
+Example: https://codesandbox.io/s/n4o5z6yk3l
+
 Install
 -------
 
