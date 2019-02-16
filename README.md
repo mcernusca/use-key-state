@@ -98,6 +98,7 @@ Notes
 If you're still confused, this is essentially hook sugar over a callback API like: 
 
 ```javascript
+// not real code
 KeyState.on("a+s+d", (down) => {
   this.setState({ "asdPressed": down }, () => {
     if (down) {
