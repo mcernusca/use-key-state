@@ -41,7 +41,7 @@ usefulKeys monitors key presses and when a rule matches, your component re-rende
 ```javascript
 if (asd.down) {
   dispatch({type:'do-the-down-thing'})
-} else if (asd.down) {
+} else if (asd.up) {
   displatch({type:'do-the-up-thing'})
 }
 ```
