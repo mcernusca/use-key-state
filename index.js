@@ -236,8 +236,11 @@ export const usefulKeys = function(rulesMap, config = defaultConfig) {
       handleUp(event)
       return
     }
-    keyMap.current[event.which] = true
-    updateState()
+
+    if (!keyMap.current[event.which]) {
+      keyMap.current[event.which] = true
+      updateState()
+    }
   }
 
   const handleUp = event => {
