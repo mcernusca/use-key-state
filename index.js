@@ -1,5 +1,58 @@
 import React from 'react'
 
+class EventEmitter {
+  constructor() {
+    this.events = {}
+  }
+  _getEventListByName(eventName) {
+    if (typeof this.events[eventName] === 'undefined') {
+      this.events[eventName] = new Set()
+    }
+    return this.events[eventName]
+  }
+  on(eventName, fn) {
+    this._getEventListByName(eventName).add(fn)
+  }
+  once(eventName, fn) {
+    const self = this
+    const onceFn = function(...args) {
+      self.removeListener(eventName, onceFn)
+      fn.apply(self, args)
+    }
+    this.on(eventName, onceFn)
+  }
+  emit(eventName, ...args) {
+    this._getEventListByName(eventName).forEach(
+      function(fn) {
+        fn.apply(this, args)
+      }.bind(this)
+    )
+  }
+  removeListener(eventName, fn) {
+    this._getEventListByName(eventName).delete(fn)
+  }
+}
+
+const eventEmitter = new EventEmitter()
+const eventsBeingListenedTo = {}
+function emitDomEvent(event) {
+  eventEmitter.emit(event.type, event)
+}
+
+const DocumentEventListener = {
+  addEventListener(eventName, listener) {
+    if (!eventsBeingListenedTo[eventName]) {
+      document.addEventListener(eventName, emitDomEvent, true)
+    }
+    eventEmitter.on(eventName, listener)
+  },
+  removeEventListener(eventName, listener) {
+    eventEmitter.removeListener(eventName, listener)
+  }
+}
+
+//--
+
 const KeyState = function(isDown = false, justReset = false) {
   this.pressed = isDown //current (live) combo pressed state
   this.down = isDown //only true for one read after combo becomes valid
@@ -43,220 +96,312 @@ Object.defineProperty(KeyState.prototype, 'up', {
 
 // --
 
-const toCode = str => {
+const toKey = str => {
   switch (str.toLowerCase()) {
     case 'tab':
-      return 9
+      return 'Tab'
     case 'enter':
     case 'return':
-      return 13
+      return 'Enter'
     case 'shift':
-      return 16
+      return 'Shift'
     case 'ctrl':
     case 'cntrl':
-      return 18
+    case 'control':
+      return 'Control'
     case 'option':
-      return 19
     case 'opt':
-      return 19
     case 'alt':
-      return 19
+      return 'Alt'
     case 'esc':
     case 'escape':
-      return 27
+      return 'Escape'
     case 'space':
-      return 32
+      return ' '
     case 'left':
-      return 37
+      return 'ArrowLeft'
     case 'up':
-      return 38
+      return 'ArrowUp'
     case 'right':
-      return 39
+      return 'ArrowRight'
     case 'down':
-      return 40
+      return 'ArrowDown'
     case 'cmd':
+    case 'command':
+    case 'win':
     case 'meta':
-      return 91
+      return 'Meta'
     case 'plus':
-      return 187
+      return '+'
     case 'minus':
-      return 189
+      return '-'
+    case 'f1':
+    case 'f2':
+    case 'f3':
+    case 'f4':
+    case 'f5':
+    case 'f6':
+    case 'f8':
+    case 'f9':
+    case 'f10':
+    case 'f11':
+    case 'f12':
+      return str.toUpperCase()
     default:
       return null
   }
 }
 
-const char = (input, down) => {
-  const { code, needsShift } = convertChar(input)
-  const isDown = down(code)
-  return needsShift ? isDown && down(toCode('shift')) : isDown
+const strDown = (input, down) => {
+  const key = strToKey(input)
+  return down(key)
 }
 
-const convertChar = input => {
-  let needsShift = false
-  let code = input
-  code = toCode(input)
-  if (!code) {
-    needsShift = input === input.toUpperCase()
-    code = input.toUpperCase().charCodeAt(0)
-  }
-  return { code: code, needsShift: needsShift }
+const strToKey = input => {
+  const key = toKey(input)
+  return key ? key : input
 }
 
-const parseRule = rule => {
+const parseRuleStr = rule => {
   return rule.split('+').map(str => str.trim())
 }
 
 const matchRule = (rule, down) => {
-  if (typeof rule === 'string') {
-    const parts = parseRule(rule)
-    const results = parts.map(str => char(str, down))
-    return results.every(r => r === true)
+  if (Array.isArray(rule)) {
+    return rule.some(ruleStr => matchRuleStr(ruleStr, down) === true)
   }
-  return down(rule)
+  return matchRuleStr(rule, down)
 }
 
-function extractCaptureFlag(rule) {
-  if (typeof rule === 'string') {
-    const parts = rule.split(',')
-    if (parts[1] && parts[1].trim() === 'capture') {
-      return { rule: parts[0].trim(), needsCapture: true }
+const matchRuleStr = (ruleStr, down) => {
+  const parts = parseRuleStr(ruleStr)
+  const results = parts.map(str => strDown(str, down))
+  return results.every(r => r === true)
+}
+
+const extractCaptureSet = rulesMap => {
+  const captureSet = new Set()
+  Object.entries(rulesMap).forEach(([_, value]) => {
+    const rules = Array.isArray(value) ? value : [value]
+    rules.forEach(rule => {
+      const parts = parseRuleStr(rule)
+      parts.forEach(part => {
+        captureSet.add(strToKey(part))
+      })
+    })
+  })
+  return captureSet
+}
+
+const mapRulesToState = (rulesMap, prevState = {}, isDown = () => false) => {
+  const keysToState = { ...prevState }
+  Object.entries(rulesMap).forEach(([key, rule]) => {
+    const matched = matchRule(rule, isDown)
+    const prevKeyState = keysToState[key]
+    if (prevKeyState) {
+      if (prevKeyState.pressed !== matched) {
+        const up = prevKeyState.pressed && !matched
+        keysToState[key] = new KeyState(matched, up)
+      }
+    } else {
+      keysToState[key] = new KeyState()
     }
-  }
-  return { rule: rule, needsCapture: false }
+  })
+  return keysToState
 }
 
-function initRulesMap(rulesMap, captureSet) {
-  // extract capture set from rules
-  const cleanMap = {}
-  Object.entries(rulesMap).forEach(([key, value]) => {
-    const { rule, needsCapture } = extractCaptureFlag(value)
-    if (needsCapture) {
-      const parts = parseRule(rule)
-      parts.forEach(str => {
-        const { code } = convertChar(str)
-        captureSet.add(code)
+const deepEqual = function(o1, o2) {
+  return JSON.stringify(o1) === JSON.stringify(o2)
+}
+
+const validateRulesMap = function(map) {
+  // Expecting an object
+  if (!map || typeof map !== 'object') {
+    throw new Error(
+      `useKeyState: expecting an object {key:value<String|Array>} as first parameter.`
+    )
+  }
+  // Expecting string or array values for each key
+  Object.entries(map).forEach(([key, value]) => {
+    const isArray = Array.isArray(value)
+    const isString = typeof value === 'string'
+    if (!isString && !isArray) {
+      throw new Error(
+        `useKeyState: expecting string or array value for key ${key}.`
+      )
+    }
+
+    if (isArray) {
+      value.forEach(rule => {
+        if (typeof rule !== 'string') {
+          throw new Error(
+            `useKeyState: expecting array of strings for key ${key}`
+          )
+        }
       })
     }
-    cleanMap[key] = rule
   })
-  return cleanMap
-}
-
-function initState(rulesMap) {
-  const keysToStatus = {}
-  Object.entries(rulesMap).forEach(([key, value]) => {
-    keysToStatus[key] = new KeyState(false)
-  })
-  return keysToStatus
 }
 
 // --
 
 const defaultConfig = {
-  keyRepeat: true
+  keyRepeat: false, // allow repeat events
+  preventDefault: false,
+  ignoreDefaultPrevented: true
+  //filterInputAcceptingElements: true,
 }
 
-export const useKeyState = function(rulesMap, config = defaultConfig) {
+export const useKeyState = function(rulesMap, configOverrides) {
+  const configRef = React.useRef({ ...defaultConfig, ...configOverrides })
+  React.useLayoutEffect(
+    () => {
+      // configOverrides is likely to always be different so
+      // doing my own deepEqual here:
+      if (!deepEqual(configOverrides, configRef.current)) {
+        configRef.current = { ...defaultConfig, ...configOverrides }
+      }
+    },
+    [configOverrides]
+  )
+  // Maintain a copy of the rules map passed in
+  const rulesMapRef = React.useRef({})
+  // Validate and update rulesMap when it changes to enable dynamic rules
+  React.useEffect(
+    () => {
+      // rulesMap is likely to always be different so
+      // doing my own deepEqual here:
+      if (!deepEqual(rulesMap, rulesMapRef.current)) {
+        validateRulesMap(rulesMap)
+        rulesMapRef.current = rulesMap
+      }
+    },
+    [rulesMap]
+  )
+  // Keep track of what keys are down
+  const keyMapRef = React.useRef({})
+  // This gets passed back to the caller and is updated
+  // once any hotkey rule matches or stops matching
+  const [state, setState] = React.useState(() => mapRulesToState(rulesMap))
   // Query live key state and some common key utility fns:
+  // This object gets merged into return object
   const query = React.useMemo(
     () => ({
       pressed: input => {
         return matchRule(input, down)
       },
       space: () => {
-        return down(toCode('space'))
+        return down(toKey('space'))
       },
       shift: () => {
-        return down(toCode('shift'))
+        return down(toKey('shift'))
       },
       ctrl: () => {
-        return down(toCode('ctrl'))
+        return down(toKey('ctrl'))
       },
       alt: () => {
-        return down(toCode('alt'))
+        return down(toKey('alt'))
       },
       option: () => {
-        return down(toCode('option'))
+        return down(toKey('option'))
       },
       meta: () => {
-        return down(toCode('meta'))
+        return down(toKey('meta'))
       },
       esc: () => {
-        return down(toCode('esc'))
+        return down(toKey('esc'))
       }
     }),
     []
   )
 
-  // Set of key codes to capture
-  const captureSet = React.useRef(new Set([]))
-  // Maintain a clean copy of the rules map passed in
-  const cleanRulesMap = React.useRef({})
-  // Keep track of what keys are down, currently bound to window
-  const keyMap = React.useRef({})
-
-  // This gets passed back to the caller and is updated
-  // once any hotkey rule matches or stops matching
-  const [state, setState] = React.useState(() => {
-    cleanRulesMap.current = initRulesMap(rulesMap, captureSet.current)
-    return {
-      ...initState(cleanRulesMap.current),
-      ...query
-    }
+  // Re-render the component if the key states have changed.
+  // Must capture state value in a ref because the actual
+  // updateKeyState function captures the initial value:
+  const stateRef = React.useRef(state)
+  React.useLayoutEffect(() => {
+    stateRef.current = state
   })
 
-  const down = code => {
-    return keyMap.current[code] || false
+  const updateKeyState = () => {
+    const nextState = mapRulesToState(
+      rulesMapRef.current,
+      stateRef.current,
+      down
+    )
+    const isEquivalentState = deepEqual(stateRef.current, nextState)
+    if (!isEquivalentState) {
+      setState(nextState)
+    }
   }
 
-  const updateState = () => {
-    setState(prevState => {
-      const tempState = { ...prevState }
-      Object.entries(cleanRulesMap.current).forEach(([key, value]) => {
-        const matched = matchRule(value, down)
-        if (prevState[key].pressed !== matched) {
-          const up = prevState[key].pressed && !matched
-          tempState[key] = new KeyState(matched, up)
-        }
-      })
-      return JSON.stringify(prevState) === JSON.stringify(tempState)
-        ? prevState
-        : tempState
-    })
+  const down = key => {
+    return keyMapRef.current[key] || false
   }
+
+  // Event handlers
 
   const handleDown = event => {
-    if (captureSet.current.has(event.which)) {
-      event.preventDefault()
+    // If Shift goes down, throw everything away
+    if (event.key === strToKey('shift')) {
+      keyMapRef.current = {}
     }
-
-    if (config.keyRepeat && keyMap.current[event.which]) {
+    // Ignore handled event
+    if (event.defaultPrevented && configRef.current.ignoreDefaultPrevented) {
+      return
+    }
+    // Capture event if it is part of our rules and hook is configured to do so:
+    if (configRef.current.preventDefault) {
+      const captureSet = extractCaptureSet(rulesMapRef.current)
+      if (captureSet.has(event.key)) {
+        event.preventDefault()
+      }
+    }
+    // Handle key repeat
+    if (
+      configRef.current.keyRepeat &&
+      event.repeat &&
+      keyMapRef.current[event.key]
+    ) {
       // handle it as a key up (drop every other frame, hack)
       handleUp(event)
       return
     }
-    if (!keyMap.current[event.which]) {
-      keyMap.current[event.which] = true
-      updateState()
+    // Mark key as down and update key state if we don't have a record of it:
+    if (!keyMapRef.current[event.key]) {
+      keyMapRef.current[event.key] = true
+      updateKeyState()
     }
   }
 
   const handleUp = event => {
-    delete keyMap.current[event.which]
-    updateState()
+    // If Shift goes up, throw everything away
+    if (event.key === strToKey('shift')) {
+      keyMapRef.current = {}
+    }
+    // Ignore keys we don't have a record of:
+    // if (!keyMapRef.current[event.key]) {
+    //   return
+    // }
+    // Remove record of key and update key state:
+    delete keyMapRef.current[event.key]
+    updateKeyState()
   }
 
+  // Bind to singleton DocumentEventListener
   React.useEffect(() => {
-    window.document.addEventListener('keydown', handleDown)
-    window.document.addEventListener('keyup', handleUp)
+    DocumentEventListener.addEventListener('keydown', handleDown)
+    DocumentEventListener.addEventListener('keyup', handleUp)
     return () => {
-      window.document.removeEventListener('keydown', handleDown)
-      window.document.removeEventListener('keyup', handleUp)
+      DocumentEventListener.removeEventListener('keydown', handleDown)
+      DocumentEventListener.removeEventListener('keyup', handleUp)
     }
   }, [])
 
-  return state
+  return {
+    ...state,
+    query
+  }
 }
 
-export default useKeyState
+export default { useKeyState: useKeyState }
