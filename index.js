@@ -1,5 +1,7 @@
 import React from 'react'
 
+//  Event Emitter
+
 class EventEmitter {
   constructor() {
     this.events = {}
@@ -33,15 +35,17 @@ class EventEmitter {
   }
 }
 
+// Document Event Listener
+
 const eventEmitter = new EventEmitter()
-const eventsBeingListenedTo = {}
+const boundEvents = {}
 function emitDomEvent(event) {
   eventEmitter.emit(event.type, event)
 }
 
 const DocumentEventListener = {
   addEventListener(eventName, listener) {
-    if (!eventsBeingListenedTo[eventName]) {
+    if (!boundEvents[eventName]) {
       document.addEventListener(eventName, emitDomEvent, true)
     }
     eventEmitter.on(eventName, listener)
@@ -51,7 +55,7 @@ const DocumentEventListener = {
   }
 }
 
-//--
+// Key State
 
 const KeyState = function(isDown = false, justReset = false) {
   this.pressed = isDown //current (live) combo pressed state
@@ -94,7 +98,7 @@ Object.defineProperty(KeyState.prototype, 'up', {
   }
 })
 
-// --
+// Utils
 
 const toKey = str => {
   switch (str.toLowerCase()) {
@@ -210,10 +214,6 @@ const mapRulesToState = (rulesMap, prevState = {}, isDown = () => false) => {
   return keysToState
 }
 
-const deepEqual = function(o1, o2) {
-  return JSON.stringify(o1) === JSON.stringify(o2)
-}
-
 const validateRulesMap = function(map) {
   // Expecting an object
   if (!map || typeof map !== 'object') {
@@ -243,18 +243,36 @@ const validateRulesMap = function(map) {
   })
 }
 
-// --
+// Utils
+
+const deepEqual = function(o1, o2) {
+  return JSON.stringify(o1) === JSON.stringify(o2)
+}
+
+const isInputAcceptingTarget = event => {
+  // content editable
+  if (event.target.isContentEditable) {
+    return true
+  }
+  // form elements
+  var tagName = (event.target || event.srcElement).tagName
+  return tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA'
+}
+
+// Config
 
 const defaultConfig = {
-  keyRepeat: false, // allow repeat events
-  preventDefault: false,
-  ignoreDefaultPrevented: true
-  //filterInputAcceptingElements: true,
+  captureEvents: false, // call event.preventDefault()
+  ignoreRepeatEvents: true, // filter out repeat key events (whos event.repeat property is true)
+  ignoreCapturedEvents: true, // respect the defaultPrevented event flag
+  ignoreInputAcceptingElements: true // filter out events from all forms of inputs
 }
+
+// useKeyState ¿
 
 export const useKeyState = function(rulesMap, configOverrides) {
   const configRef = React.useRef({ ...defaultConfig, ...configOverrides })
-  React.useLayoutEffect(
+  React.useEffect(
     () => {
       // configOverrides is likely to always be different so
       // doing my own deepEqual here:
@@ -342,16 +360,23 @@ export const useKeyState = function(rulesMap, configOverrides) {
   // Event handlers
 
   const handleDown = event => {
+    // Ignore events from input accepting elements (inputs etc)
+    if (
+      configRef.current.ignoreInputAcceptingElements &&
+      isInputAcceptingTarget(event)
+    ) {
+      return
+    }
     // If Shift goes down, throw everything away
     if (event.key === strToKey('shift')) {
       keyMapRef.current = {}
     }
     // Ignore handled event
-    if (event.defaultPrevented && configRef.current.ignoreDefaultPrevented) {
+    if (event.defaultPrevented && configRef.current.ignoreCapturedEvents) {
       return
     }
     // Capture event if it is part of our rules and hook is configured to do so:
-    if (configRef.current.preventDefault) {
+    if (configRef.current.captureEvents) {
       const captureSet = extractCaptureSet(rulesMapRef.current)
       if (captureSet.has(event.key)) {
         event.preventDefault()
@@ -359,7 +384,7 @@ export const useKeyState = function(rulesMap, configOverrides) {
     }
     // Handle key repeat
     if (
-      configRef.current.keyRepeat &&
+      configRef.current.ignoreRepeatEvents === false &&
       event.repeat &&
       keyMapRef.current[event.key]
     ) {
@@ -375,14 +400,18 @@ export const useKeyState = function(rulesMap, configOverrides) {
   }
 
   const handleUp = event => {
+    // Ignore events from input accepting elements (inputs etc)
+    if (
+      configRef.current.ignoreInputAcceptingElements &&
+      isInputAcceptingTarget(event)
+    ) {
+      return
+    }
     // If Shift goes up, throw everything away
     if (event.key === strToKey('shift')) {
       keyMapRef.current = {}
     }
-    // Ignore keys we don't have a record of:
-    // if (!keyMapRef.current[event.key]) {
-    //   return
-    // }
+
     // Remove record of key and update key state:
     delete keyMapRef.current[event.key]
     updateKeyState()
