@@ -42,26 +42,26 @@ useKeyState monitors key presses and when a rule matches, your component re-rend
 if (asd.down) {
   dispatch({type:'do-the-down-thing'})
 } else if (asd.up) {
-  displatch({type:'do-the-up-thing'})
+  dispatch({type:'do-the-up-thing'})
 }
 ```
 
 The pressed property is appropriate to use if you have your own render loop or inside other event handlers such as a drag handler:
 
 ```javascript
-onDrag = (e) => {
+handleDrag = (e) => {
   if(asd.pressed) {
     doThePressedThing(e)
   }
-}
+}``
 ```
 
 ### Capture events
 
-By default useKeyState doesn't capture events. To do so, simply append `,capture` at the end of your rule:
+By default useKeyState doesn't capture events. To do so, simply pass a configuration object as the second parameter:
 
 ```javascript
-const { asd } = useKeyState({ asd: 'a+s+d,capture' })
+const { asd } = useKeyState({ asd: 'a+s+d' }, { preventDefault: true })
 ```
 
 That's it!
@@ -73,24 +73,33 @@ Goals
 
 - simple key bindings w/o callbacks (immediate mode key events)
 
-- have ability to query the state of the keyboard (bypass react state)
+- have ability to query the state of the keyboard (`{ query } = useKeyState()`)
 
-- capture events (pass `,capture` at the end of the rule)
+- capture events (pass `{ preventDefault: true }` as a configuration parameter)
 
 - basic configuration (`{ keyRepeat: true }` by default)
 
-- `TODO` support multiple rules per key (`{ copy: 'meta+c,ctrl+c' }`)
+- singleton document event handler shared between all the keyState hooks
+
+- support multiple rules per key (`{ copy: ['meta+c', 'ctrl+c'] }`)
 
 - `TODO` be able to bind to a particular subtree (return bind methods)
 
-- `TODO` filter events that originate from interactive elements (inputs)
+- `TODO` filter events that originate from input accepting elements
 
-- `TODO` investigate the performance costs of having each hook bind globally
+- enable a different way to program with key events
 
 Non-Goals
 --------
 
-- to necessarily be a better mousetrap, hotkeys.js or react-hotkeys - rather enable a different way to program with key events. Think carefully about what you need, it might be smarter to write your own hook abstraction over something else.
+- to fit every possible need
+
+- legacy browsers support
+
+- key sequences, although that could be a specific form of the keyState hook at some point
+
+
+Think carefully about what you need, it might be smarter to write your own hook abstraction over something else.
 
 Notes
 -----------
