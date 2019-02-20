@@ -88,7 +88,7 @@ Configuration is at the hook level - feel free to use multiple hooks in the same
 Both the rules map and the configuration objects can be updated dynamically. For example, only capture if we're in editing mode:
 
 ```javascript
-const { asd } = useKeyState({ asd: 'a+s+d' }, { preventDefault: isEditing })
+const { asd } = useKeyState({ asd: 'a+s+d' }, { captureEvents: isEditing })
 ```
 
 ### Query
