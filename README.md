@@ -51,7 +51,7 @@ useEffect(() => {
 The pressed property is appropriate to use if you need to base your render logic on the pressed state:
 
 ```jsx
-<div className={ asd.pressed ? "is-active" : "is-not-active"} />
+<div className={ asd.pressed ? 'is-active' : 'is-not-active'} />
 ```
 
 or inside an event handler or other form of render loop:
@@ -129,7 +129,7 @@ Think carefully about what you need, it might be smarter to write your own hook 
 
 ## Quirks
 
-useKeyState maintains a map of `event.key` values that it's watching for. These values include all modifiers like the Shift key. A rule like `"shift+a"` will not match reliably and you should use `"A"` instead. Because of this whenever the Shift key is pressed the map is emptied so shift essentially acts as an interrupt for any hotkey. This is an implementation detail which might change but this is the current behavior. Generally, avoid hotkey rules that involve the Shift key is what I'm saying.
+useKeyState maintains a map of `event.key` values that it's watching for. These values include all modifiers like the Shift key. A rule like `'shift+a'` will not match reliably and you should use `'A'` instead. Because of this whenever the Shift key is pressed the map is emptied so shift essentially acts as an interrupt for any hotkey. This is an implementation detail which might change but this is the current behavior. Generally, avoid hotkey rules that involve the Shift key is what I'm saying.
 
 ## Notes
 
@@ -137,8 +137,8 @@ If you're still confused, this is essentially hook sugar over a callback API lik
 
 ```javascript
 // not real code
-KeyState.on("a+s+d", (down) => {
-  this.setState({ "asdPressed": down }, () => {
+KeyState.on('a+s+d', (down) => {
+  this.setState({ asdPressed: down }, () => {
     if (down) {
       // do the down thing
     } else {
