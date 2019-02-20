@@ -53,7 +53,7 @@ handleDrag = (e) => {
   if(asd.pressed) {
     doThePressedThing(e)
   }
-}``
+}
 ```
 
 ### Capture events
