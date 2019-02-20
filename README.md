@@ -1,10 +1,10 @@
-# use-key-state
+# useKeyState
 
-Keyboard events as values
+Keyboard events as values hook for React.
 
 ## Introduction
 
-Keyboard events as data for React. useKeyState monitors key presses and when a rule matches, your component re-renders.
+useKeyState monitors key presses and when a rule matches, your component re-renders.
 
 Read this first: https://use-key-state.mihaicernusca.com
 
