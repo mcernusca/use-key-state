@@ -1,6 +1,6 @@
 # useKeyState
 
-Keyboard events as values hook for React.
+Keyboard events as values for React
 
 ## Introduction
 
