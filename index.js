@@ -57,13 +57,13 @@ const DocumentEventListener = {
 
 // Key State
 
-const KeyState = function(isDown = false, justReset = false) {
+function KeyState(isDown = false, justReset = false) {
   this.pressed = isDown //current (live) combo pressed state
   this.down = isDown //only true for one read after combo becomes valid
   this.up = justReset //only true for one read after combo is no longer valid
 }
 
-const _get = function(context, key) {
+function _get(context, key) {
   const expiredKey = `_${key}Expired`
   const valueKey = `_${key}`
   if (context[expiredKey]) {
@@ -73,7 +73,7 @@ const _get = function(context, key) {
   return context[valueKey]
 }
 
-const _set = function(context, key, value) {
+function _set(context, key, value) {
   const expiredKey = `_${key}Expired`
   const valueKey = `_${key}`
   context[expiredKey] = false
@@ -156,34 +156,34 @@ const toKey = str => {
   }
 }
 
-const strDown = (input, down) => {
+function strDown(input, down) {
   const key = strToKey(input)
   return down(key)
 }
 
-const strToKey = input => {
+function strToKey(input) {
   const key = toKey(input)
   return key ? key : input
 }
 
-const parseRuleStr = rule => {
+function parseRuleStr(rule) {
   return rule.split('+').map(str => str.trim())
 }
 
-const matchRule = (rule, down) => {
+function matchRule(rule, down) {
   if (Array.isArray(rule)) {
     return rule.some(ruleStr => matchRuleStr(ruleStr, down) === true)
   }
   return matchRuleStr(rule, down)
 }
 
-const matchRuleStr = (ruleStr, down) => {
+function matchRuleStr(ruleStr, down) {
   const parts = parseRuleStr(ruleStr)
   const results = parts.map(str => strDown(str, down))
   return results.every(r => r === true)
 }
 
-const extractCaptureSet = rulesMap => {
+function extractCaptureSet(rulesMap) {
   const captureSet = new Set()
   Object.entries(rulesMap).forEach(([_, value]) => {
     const rules = Array.isArray(value) ? value : [value]
@@ -197,7 +197,7 @@ const extractCaptureSet = rulesMap => {
   return captureSet
 }
 
-const mapRulesToState = (rulesMap, prevState = {}, isDown = () => false) => {
+function mapRulesToState(rulesMap, prevState = {}, isDown = () => false) {
   const keysToState = { ...prevState }
   Object.entries(rulesMap).forEach(([key, rule]) => {
     const matched = matchRule(rule, isDown)
@@ -214,7 +214,7 @@ const mapRulesToState = (rulesMap, prevState = {}, isDown = () => false) => {
   return keysToState
 }
 
-const validateRulesMap = function(map) {
+function validateRulesMap(map) {
   // Expecting an object
   if (!map || typeof map !== 'object') {
     throw new Error(
@@ -245,11 +245,11 @@ const validateRulesMap = function(map) {
 
 // Utils
 
-const deepEqual = function(o1, o2) {
+function deepEqual(o1, o2) {
   return JSON.stringify(o1) === JSON.stringify(o2)
 }
 
-const isInputAcceptingTarget = event => {
+function isInputAcceptingTarget(event) {
   // content editable
   if (event.target.isContentEditable) {
     return true
@@ -341,7 +341,7 @@ export const useKeyState = function(rulesMap, configOverrides) {
     stateRef.current = state
   })
 
-  const updateKeyState = () => {
+  function updateKeyState() {
     const nextState = mapRulesToState(
       rulesMapRef.current,
       stateRef.current,
@@ -353,13 +353,13 @@ export const useKeyState = function(rulesMap, configOverrides) {
     }
   }
 
-  const down = key => {
+  function down(key) {
     return keyMapRef.current[key] || false
   }
 
   // Event handlers
 
-  const handleDown = event => {
+  function handleDown(event) {
     // Ignore events from input accepting elements (inputs etc)
     if (
       configRef.current.ignoreInputAcceptingElements &&
@@ -399,7 +399,7 @@ export const useKeyState = function(rulesMap, configOverrides) {
     }
   }
 
-  const handleUp = event => {
+  function handleUp(event) {
     // Ignore events from input accepting elements (inputs etc)
     if (
       configRef.current.ignoreInputAcceptingElements &&
