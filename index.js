@@ -100,7 +100,7 @@ Object.defineProperty(KeyState.prototype, 'up', {
 
 // Utils
 
-const toKey = str => {
+function toKey(str) {
   switch (str.toLowerCase()) {
     case 'tab':
       return 'Tab'
@@ -152,35 +152,21 @@ const toKey = str => {
     case 'f12':
       return str.toUpperCase()
     default:
-      return null
+      return str
   }
 }
 
-function strDown(input, down) {
-  const key = strToKey(input)
-  return down(key)
-}
+function matchRule(rule, isDown) {
+  function matchRuleStr(ruleStr) {
+    const parts = parseRuleStr(ruleStr)
+    const results = parts.map(str => isDown(toKey(str)))
+    return results.every(r => r === true)
+  }
 
-function strToKey(input) {
-  const key = toKey(input)
-  return key ? key : input
-}
-
-function parseRuleStr(rule) {
-  return rule.split('+').map(str => str.trim())
-}
-
-function matchRule(rule, down) {
   if (Array.isArray(rule)) {
-    return rule.some(ruleStr => matchRuleStr(ruleStr, down) === true)
+    return rule.some(ruleStr => matchRuleStr(ruleStr, isDown) === true)
   }
-  return matchRuleStr(rule, down)
-}
-
-function matchRuleStr(ruleStr, down) {
-  const parts = parseRuleStr(ruleStr)
-  const results = parts.map(str => strDown(str, down))
-  return results.every(r => r === true)
+  return matchRuleStr(rule, isDown)
 }
 
 function extractCaptureSet(rulesMap) {
@@ -190,11 +176,15 @@ function extractCaptureSet(rulesMap) {
     rules.forEach(rule => {
       const parts = parseRuleStr(rule)
       parts.forEach(part => {
-        captureSet.add(strToKey(part))
+        captureSet.add(toKey(part))
       })
     })
   })
   return captureSet
+}
+
+function parseRuleStr(rule) {
+  return rule.split('+').map(str => str.trim())
 }
 
 function mapRulesToState(rulesMap, prevState = {}, isDown = () => false) {
@@ -230,7 +220,6 @@ function validateRulesMap(map) {
         `useKeyState: expecting string or array value for key ${key}.`
       )
     }
-
     if (isArray) {
       value.forEach(rule => {
         if (typeof rule !== 'string') {
@@ -274,8 +263,7 @@ export const useKeyState = function(rulesMap, configOverrides) {
   const configRef = React.useRef({ ...defaultConfig, ...configOverrides })
   React.useEffect(
     () => {
-      // configOverrides is likely to always be different so
-      // doing my own deepEqual here:
+      // configOverrides is likely to always be different:
       if (!deepEqual(configOverrides, configRef.current)) {
         configRef.current = { ...defaultConfig, ...configOverrides }
       }
@@ -287,8 +275,7 @@ export const useKeyState = function(rulesMap, configOverrides) {
   // Validate and update rulesMap when it changes to enable dynamic rules
   React.useEffect(
     () => {
-      // rulesMap is likely to always be different so
-      // doing my own deepEqual here:
+      // rulesMap is likely to always be different:
       if (!deepEqual(rulesMap, rulesMapRef.current)) {
         validateRulesMap(rulesMap)
         rulesMapRef.current = rulesMap
@@ -306,28 +293,28 @@ export const useKeyState = function(rulesMap, configOverrides) {
   const query = React.useMemo(
     () => ({
       pressed: input => {
-        return matchRule(input, down)
+        return matchRule(input, isDown)
       },
       space: () => {
-        return down(toKey('space'))
+        return isDown(toKey('space'))
       },
       shift: () => {
-        return down(toKey('shift'))
+        return isDown(toKey('shift'))
       },
       ctrl: () => {
-        return down(toKey('ctrl'))
+        return isDown(toKey('ctrl'))
       },
       alt: () => {
-        return down(toKey('alt'))
+        return isDown(toKey('alt'))
       },
       option: () => {
-        return down(toKey('option'))
+        return isDown(toKey('option'))
       },
       meta: () => {
-        return down(toKey('meta'))
+        return isDown(toKey('meta'))
       },
       esc: () => {
-        return down(toKey('esc'))
+        return isDown(toKey('esc'))
       }
     }),
     []
@@ -345,7 +332,7 @@ export const useKeyState = function(rulesMap, configOverrides) {
     const nextState = mapRulesToState(
       rulesMapRef.current,
       stateRef.current,
-      down
+      isDown
     )
     const isEquivalentState = deepEqual(stateRef.current, nextState)
     if (!isEquivalentState) {
@@ -353,7 +340,7 @@ export const useKeyState = function(rulesMap, configOverrides) {
     }
   }
 
-  function down(key) {
+  function isDown(key) {
     return keyMapRef.current[key] || false
   }
 
@@ -368,7 +355,7 @@ export const useKeyState = function(rulesMap, configOverrides) {
       return
     }
     // If Shift goes down, throw everything away
-    if (event.key === strToKey('shift')) {
+    if (event.key === toKey('shift')) {
       keyMapRef.current = {}
     }
     // Ignore handled event
@@ -392,7 +379,7 @@ export const useKeyState = function(rulesMap, configOverrides) {
       handleUp(event)
       return
     }
-    // Mark key as down and update key state if we don't have a record of it:
+
     if (!keyMapRef.current[event.key]) {
       keyMapRef.current[event.key] = true
       updateKeyState()
@@ -408,16 +395,14 @@ export const useKeyState = function(rulesMap, configOverrides) {
       return
     }
     // If Shift goes up, throw everything away
-    if (event.key === strToKey('shift')) {
+    if (event.key === toKey('shift')) {
       keyMapRef.current = {}
     }
 
-    // Remove record of key and update key state:
     delete keyMapRef.current[event.key]
     updateKeyState()
   }
 
-  // Bind to singleton DocumentEventListener
   React.useEffect(() => {
     DocumentEventListener.addEventListener('keydown', handleDown)
     DocumentEventListener.addEventListener('keyup', handleUp)
