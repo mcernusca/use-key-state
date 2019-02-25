@@ -148,3 +148,11 @@ KeyState.on('a+s+d', (down) => {
 })
 ```
 
+## Related key hooks
+
+* [donavon/use-event-listener](https://github.com/donavon/use-event-listener) generic declarative useEventListener
+
+* [haldarmahesh/use-key-hook](https://github.com/haldarmahesh/use-key-hook) callback based hook (single keys only)
+
+If you know of any others [let me know](https://twitter.com/mcernusca)
+
