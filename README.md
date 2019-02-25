@@ -156,3 +156,7 @@ KeyState.on('a+s+d', (down) => {
 
 If you know of any others [let me know](https://twitter.com/mcernusca)
 
+## Related event hooks
+
+* [react-spring/react-with-gesture](https://github.com/react-spring/react-with-gesture) great abstraction over mouse / touch events
+
