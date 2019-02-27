@@ -1,3 +1,6 @@
+// useKeyState - keyboard events as values ( ¿ )
+// https://use-key-state.mihaicernusca.com
+
 import React from 'react'
 
 //  Event Emitter
@@ -24,7 +27,9 @@ class EventEmitter {
     this.on(eventName, onceFn)
   }
   emit(eventName, ...args) {
-    this._getEventListByName(eventName).forEach(
+    // Traverse set in reverse so that deepest child has a
+    // chance to capture the event. Mimics DOM bubbling
+    ;[...this._getEventListByName(eventName)].reverse().forEach(
       function(fn) {
         fn.apply(this, args)
       }.bind(this)
@@ -254,7 +259,8 @@ const defaultConfig = {
   captureEvents: false, // call event.preventDefault()
   ignoreRepeatEvents: true, // filter out repeat key events (whos event.repeat property is true)
   ignoreCapturedEvents: true, // respect the defaultPrevented event flag
-  ignoreInputAcceptingElements: true // filter out events from all forms of inputs
+  ignoreInputAcceptingElements: true, // filter out events from all forms of inputs
+  debug: false
 }
 
 // useKeyState ¿
@@ -329,6 +335,16 @@ export const useKeyState = function(rulesMap, configOverrides) {
   })
 
   function updateKeyState() {
+    if (configRef.current.debug) {
+      console.log(
+        'useKeyState: rulesMap',
+        { ...rulesMapRef.current },
+        'keyMap',
+        {
+          ...keyMapRef.current
+        }
+      )
+    }
     const nextState = mapRulesToState(
       rulesMapRef.current,
       stateRef.current,
@@ -347,21 +363,37 @@ export const useKeyState = function(rulesMap, configOverrides) {
   // Event handlers
 
   function handleDown(event) {
+    if (configRef.current.debug) {
+      console.log('useKeyState: down', event.key)
+    }
+
     // Ignore events from input accepting elements (inputs etc)
     if (
       configRef.current.ignoreInputAcceptingElements &&
       isInputAcceptingTarget(event)
     ) {
+      if (configRef.current.debug) {
+        console.log(
+          'useKeyState: Ignoring event from input accepting element:',
+          event.key
+        )
+      }
       return
     }
+
     // If Shift goes down, throw everything away
     if (event.key === toKey('shift')) {
       keyMapRef.current = {}
     }
+
     // Ignore handled event
     if (event.defaultPrevented && configRef.current.ignoreCapturedEvents) {
+      if (configRef.current.debug) {
+        console.log('useKeyState: Ignoring captured up event:', event.key)
+      }
       return
     }
+
     // Capture event if it is part of our rules and hook is configured to do so:
     if (configRef.current.captureEvents) {
       const captureSet = extractCaptureSet(rulesMapRef.current)
@@ -369,6 +401,7 @@ export const useKeyState = function(rulesMap, configOverrides) {
         event.preventDefault()
       }
     }
+
     // Handle key repeat
     if (
       configRef.current.ignoreRepeatEvents === false &&
@@ -380,18 +413,28 @@ export const useKeyState = function(rulesMap, configOverrides) {
       return
     }
 
-    if (!keyMapRef.current[event.key]) {
-      keyMapRef.current[event.key] = true
+    // Handle key that didn't receive a key up event - happens whe meta or ctrl is down
+    if (keyMapRef.current[event.key]) {
+      delete keyMapRef.current[event.key]
       updateKeyState()
     }
+
+    keyMapRef.current[event.key] = true
+    updateKeyState()
   }
 
   function handleUp(event) {
+    if (configRef.current.debug) {
+      console.log('useKeyState: up', event.key)
+    }
     // Ignore events from input accepting elements (inputs etc)
     if (
       configRef.current.ignoreInputAcceptingElements &&
       isInputAcceptingTarget(event)
     ) {
+      if (configRef.current.debug) {
+        console.log('useKeyState: Ignoring captured up event:', event.key)
+      }
       return
     }
     // If Shift goes up, throw everything away
