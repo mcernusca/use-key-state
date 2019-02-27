@@ -193,7 +193,7 @@ function parseRuleStr(rule) {
 }
 
 function mapRulesToState(rulesMap, prevState = {}, isDown = () => false) {
-  const keysToState = { ...prevState }
+  const keysToState = {...prevState}
   Object.entries(rulesMap).forEach(([key, rule]) => {
     const matched = matchRule(rule, isDown)
     const prevKeyState = keysToState[key]
@@ -221,16 +221,12 @@ function validateRulesMap(map) {
     const isArray = Array.isArray(value)
     const isString = typeof value === 'string'
     if (!isString && !isArray) {
-      throw new Error(
-        `useKeyState: expecting string or array value for key ${key}.`
-      )
+      throw new Error(`useKeyState: expecting string or array value for key ${key}.`)
     }
     if (isArray) {
       value.forEach(rule => {
         if (typeof rule !== 'string') {
-          throw new Error(
-            `useKeyState: expecting array of strings for key ${key}`
-          )
+          throw new Error(`useKeyState: expecting array of strings for key ${key}`)
         }
       })
     }
@@ -266,29 +262,23 @@ const defaultConfig = {
 // useKeyState ¿
 
 export const useKeyState = function(rulesMap, configOverrides) {
-  const configRef = React.useRef({ ...defaultConfig, ...configOverrides })
-  React.useEffect(
-    () => {
-      // configOverrides is likely to always be different:
-      if (!deepEqual(configOverrides, configRef.current)) {
-        configRef.current = { ...defaultConfig, ...configOverrides }
-      }
-    },
-    [configOverrides]
-  )
+  const configRef = React.useRef({...defaultConfig, ...configOverrides})
+  React.useEffect(() => {
+    // configOverrides is likely to always be different:
+    if (!deepEqual(configOverrides, configRef.current)) {
+      configRef.current = {...defaultConfig, ...configOverrides}
+    }
+  }, [configOverrides])
   // Maintain a copy of the rules map passed in
   const rulesMapRef = React.useRef({})
   // Validate and update rulesMap when it changes to enable dynamic rules
-  React.useEffect(
-    () => {
-      // rulesMap is likely to always be different:
-      if (!deepEqual(rulesMap, rulesMapRef.current)) {
-        validateRulesMap(rulesMap)
-        rulesMapRef.current = rulesMap
-      }
-    },
-    [rulesMap]
-  )
+  React.useEffect(() => {
+    // rulesMap is likely to always be different:
+    if (!deepEqual(rulesMap, rulesMapRef.current)) {
+      validateRulesMap(rulesMap)
+      rulesMapRef.current = rulesMap
+    }
+  }, [rulesMap])
   // Keep track of what keys are down
   const keyMapRef = React.useRef({})
   // This gets passed back to the caller and is updated
@@ -335,22 +325,15 @@ export const useKeyState = function(rulesMap, configOverrides) {
   })
 
   function updateKeyState() {
-    if (configRef.current.debug) {
-      console.log(
-        'useKeyState: rulesMap',
-        { ...rulesMapRef.current },
-        'keyMap',
-        {
-          ...keyMapRef.current
-        }
-      )
-    }
-    const nextState = mapRulesToState(
-      rulesMapRef.current,
-      stateRef.current,
-      isDown
-    )
+    const nextState = mapRulesToState(rulesMapRef.current, stateRef.current, isDown)
     const isEquivalentState = deepEqual(stateRef.current, nextState)
+
+    if (configRef.current.debug) {
+      console.log('useKeyState: rulesMap', {...rulesMapRef.current}, 'keyMap', {
+        ...keyMapRef.current
+      })
+    }
+
     if (!isEquivalentState) {
       setState(nextState)
     }
@@ -368,20 +351,15 @@ export const useKeyState = function(rulesMap, configOverrides) {
     }
 
     // Ignore events from input accepting elements (inputs etc)
-    if (
-      configRef.current.ignoreInputAcceptingElements &&
-      isInputAcceptingTarget(event)
-    ) {
+    if (configRef.current.ignoreInputAcceptingElements && isInputAcceptingTarget(event)) {
       if (configRef.current.debug) {
-        console.log(
-          'useKeyState: Ignoring event from input accepting element:',
-          event.key
-        )
+        console.log('useKeyState: Ignoring event from input accepting element:', event.key)
       }
       return
     }
 
-    // If Shift goes down, throw everything away
+    // If Shift goes down, throw everything away because it modifies existing
+    // down key values so key up won't match
     if (event.key === toKey('shift')) {
       keyMapRef.current = {}
     }
@@ -428,17 +406,15 @@ export const useKeyState = function(rulesMap, configOverrides) {
       console.log('useKeyState: up', event.key)
     }
     // Ignore events from input accepting elements (inputs etc)
-    if (
-      configRef.current.ignoreInputAcceptingElements &&
-      isInputAcceptingTarget(event)
-    ) {
+    if (configRef.current.ignoreInputAcceptingElements && isInputAcceptingTarget(event)) {
       if (configRef.current.debug) {
         console.log('useKeyState: Ignoring captured up event:', event.key)
       }
       return
     }
-    // If Shift goes up, throw everything away
-    if (event.key === toKey('shift')) {
+    // If Meta goes up, throw everything away because we might have stuck
+    // keys
+    if (event.key === toKey('meta')) {
       keyMapRef.current = {}
     }
 
@@ -461,4 +437,4 @@ export const useKeyState = function(rulesMap, configOverrides) {
   }
 }
 
-export default { useKeyState: useKeyState }
+export default {useKeyState: useKeyState}
