@@ -129,7 +129,9 @@ Think carefully about what you need, it might be smarter to write your own hook 
 
 ## Quirks
 
-useKeyState maintains a map of `event.key` values that it's watching for. These values include all modifiers like the Shift key. A rule like `'shift+a'` will not match reliably and you should use `'A'` instead. Because of this whenever the Shift key is pressed the map is emptied so shift essentially acts as an interrupt for any hotkey. This is an implementation detail which might change but this is the current behavior. Generally, avoid hotkey rules that involve the Shift key is what I'm saying.
+useKeyState maintains a map of `event.key` values that it's watching for. These values include all modifiers like the Shift key. A rule like `'shift+a'` will not match reliably and you should use `'A'` instead. Because of this whenever the Shift key is pressed the map is emptied so shift essentially acts as an interrupt for any hotkey. the Meta key is similar but it clears the map when it goes up as we don't get key up events after the meta key is pressed. That means while meta is down all further key presses will return `pressed` until meta goes up.
+
+These are implementation details which might change but this is the current behavior. Design with this in mind.
 
 ## Notes
 
