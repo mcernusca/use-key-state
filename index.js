@@ -107,6 +107,9 @@ Object.defineProperty(KeyState.prototype, 'up', {
 
 function toKey(str) {
   switch (str.toLowerCase()) {
+    case 'backspace':
+    case 'delete':
+      return 'Backspace'
     case 'tab':
       return 'Tab'
     case 'enter':
