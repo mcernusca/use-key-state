@@ -152,6 +152,10 @@ KeyState.on('a+s+d', (down) => {
 
 ## Related event hooks
 
+* [JohannesKlauss/react-hotkeys-hoo](https://github.com/JohannesKlauss/react-hotkeys-hook) a hook version of the hotkeys package
+
+* [sandiiarov/use-hotkeys](https://github.com/sandiiarov/use-hotkeys) a hook version of the hotkeys.js package
+
 * [donavon/use-event-listener](https://github.com/donavon/use-event-listener) generic declarative useEventListener
 
 * [haldarmahesh/use-key-hook](https://github.com/haldarmahesh/use-key-hook) callback based hook (single keys only)
