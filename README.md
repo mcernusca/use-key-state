@@ -13,7 +13,7 @@ Example: https://codesandbox.io/s/n4o5z6yk3l
 ## Install
 
 ```text
-copypasta (for now)
+npm install use-key-state --save-dev
 ```
 
 ## Usage
@@ -21,20 +21,20 @@ copypasta (for now)
 Pass it a map of hotkey rules as strings and it hands back one of the same shape:
 
 ```javascript
-const { asd } = useKeyState({ asd: 'a+s+d' })
+const { asd } = useKeyState({ asd: "a+s+d" });
 ```
 
 Or pass it an array of rules per key:
 
 ```javascript
-const { asd, copy } = useKeyState({ asd: 'a+s+d', copy: ['meta+c', 'ctrl+c'] })
+const { asd, copy } = useKeyState({ asd: "a+s+d", copy: ["meta+c", "ctrl+c"] });
 ```
 
 The values are state objects with three boolean properties: `pressed`, `down` and `up`.
 
 Use `pressed` if you want to know if the keys are currently down. This is always true while the rule associated with it matches.
 
-Use `down` or `up` if you want to know when the `keydown` and `keyup` events that caused the rule to match trigger. These values will be false after you read the value so be sure to capture it if you need it in multiple places! This is the equivalent of an event callback - *you read it, consider yourself notified.*
+Use `down` or `up` if you want to know when the `keydown` and `keyup` events that caused the rule to match trigger. These values will be false after you read the value so be sure to capture it if you need it in multiple places! This is the equivalent of an event callback - _you read it, consider yourself notified._
 
 This behavior is also what makes it safe to use because it is guaranteed to return false at the next render:
 
@@ -51,20 +51,20 @@ useEffect(() => {
 The pressed property is appropriate to use if you need to base your render logic on the pressed state:
 
 ```jsx
-<div className={ asd.pressed ? 'is-active' : 'is-not-active'} />
+<div className={asd.pressed ? "is-active" : "is-not-active"} />
 ```
 
 or inside an event handler or other form of render loop:
 
 ```javascript
-handleDrag = (e) => {
-  if(asd.pressed) {
+handleDrag = e => {
+  if (asd.pressed) {
     // do things differently while key is pressed
   }
-}
+};
 ```
 
-### Document Events 
+### Document Events
 
 While useKeyState hooks maintain their own internal state, they share one singleton document event listener making them relatively cheap. There might also be room for a useLocalKeyState hook that returns key bindings in the future.
 
@@ -78,7 +78,7 @@ const defaultConfig = {
   ignoreRepeatEvents: true, // filter out repeat key events (whos event.repeat property is true)
   ignoreCapturedEvents: true, // respect the defaultPrevented event flag
   ignoreInputAcceptingElements: true // filter out events from all forms of inputs
-}
+};
 ```
 
 Configuration is at the hook level - feel free to use multiple hooks in the same component where needed.
@@ -88,7 +88,7 @@ Configuration is at the hook level - feel free to use multiple hooks in the same
 Both the rules map and the configuration objects can be updated dynamically. For example, only capture if we're in editing mode:
 
 ```javascript
-const { asd } = useKeyState({ asd: 'a+s+d' }, { captureEvents: isEditing })
+const { asd } = useKeyState({ asd: "a+s+d" }, { captureEvents: isEditing });
 ```
 
 ### Query
@@ -111,7 +111,6 @@ if (query.space() {
 
 That's it!
 
-
 ## Goals
 
 - enable a different way to program with key events
@@ -124,7 +123,6 @@ That's it!
 
 - key sequences, although that could be a specific form of the keyState hook at some point
 
-
 Think carefully about what you need, it might be smarter to write your own hook abstraction over something else.
 
 ## Quirks
@@ -135,32 +133,31 @@ These are implementation details which might change but this is the current beha
 
 ## Notes
 
-If you're still confused, this is essentially hook sugar over a callback API like: 
+If you're still confused, this is essentially hook sugar over a callback API like:
 
 ```javascript
 // not real code
-KeyState.on('a+s+d', (down) => {
+KeyState.on("a+s+d", down => {
   this.setState({ asdPressed: down }, () => {
     if (down) {
       // do the down thing
     } else {
-     // do the up thing
+      // do the up thing
     }
-  })
-})
+  });
+});
 ```
 
 ## Related event hooks
 
-* [JohannesKlauss/react-hotkeys-hoo](https://github.com/JohannesKlauss/react-hotkeys-hook) a hook version of the hotkeys package
+- [JohannesKlauss/react-hotkeys-hoo](https://github.com/JohannesKlauss/react-hotkeys-hook) a hook version of the hotkeys package
 
-* [sandiiarov/use-hotkeys](https://github.com/sandiiarov/use-hotkeys) a hook version of the hotkeys.js package
+- [sandiiarov/use-hotkeys](https://github.com/sandiiarov/use-hotkeys) a hook version of the hotkeys.js package
 
-* [donavon/use-event-listener](https://github.com/donavon/use-event-listener) generic declarative useEventListener
+- [donavon/use-event-listener](https://github.com/donavon/use-event-listener) generic declarative useEventListener
 
-* [haldarmahesh/use-key-hook](https://github.com/haldarmahesh/use-key-hook) callback based hook (single keys only)
+- [haldarmahesh/use-key-hook](https://github.com/haldarmahesh/use-key-hook) callback based hook (single keys only)
 
-* [react-spring/react-with-gesture](https://github.com/react-spring/react-with-gesture) great abstraction over mouse / touch events
+- [react-spring/react-with-gesture](https://github.com/react-spring/react-with-gesture) great abstraction over mouse / touch events
 
 If you know of any others [let me know](https://twitter.com/mcernusca)
-

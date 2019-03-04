@@ -1,0 +1,33 @@
+{
+  "name": "use-key-state",
+  "description": "Keyboard events as values for React (hook)",
+  "homepage": "https://use-key-state.mihaicernusca.com",
+  "author": "Mihai Cernusca <mcernusca@gmail.com> (http://mihaicernusca.com)",
+  "version": "0.1.0",
+  "license": "MIT",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:mcernusca/use-key-state.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mcernusca/use-key-state/issues"
+  },
+  "keywords": [
+    "react",
+    "hook",
+    "key",
+    "combo",
+    "hotkey"
+  ],
+  "peerDependencies": {
+    "react": ">= 16.8.0"
+  },
+  "devDependencies": {
+    "react": "16.8.3",
+    "react-dom": "16.8.3"
+  },
+  "files": [
+    "index.js"
+  ]
+}
