@@ -105,48 +105,91 @@ Object.defineProperty(KeyState.prototype, 'up', {
 
 // Utils
 
-function toKey(str) {
-  switch (str.toLowerCase()) {
-    case 'backspace':
+// toCodes: maps our string notation to possible key event codes
+// See: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code
+// Returns an array because browser / platform inconsistencies and we don't care to
+// distinguish between left and right keys usually. If we can't map it we pass
+// it through which means everyone is free to use the actual codes in the rules
+// if they need more.
+function toCodes(input) {
+  if (!input.length) {
+    return []
+  }
+
+  const str = input.toLowerCase()
+  const len = str.length
+
+  if (len === 1 && str.match(/[a-z]/i)) {
+    // a-z
+    return [`Key${str.toUpperCase()}`]
+  } else if (len === 1 && str.match(/[0-9]/i)) {
+    // 0-9
+    return [`Digit${str}`]
+  }
+
+  switch (str) {
+    case '[':
+      return ['BracketLeft']
+    case ']':
+      return ['BracketRight']
+    case '\\':
+    case 'backslash':
+      return ['Backslash']
+    case 'period':
+    case '.':
+      return ['Period']
+    case 'comma':
+    case ',':
+      return ['Comma', 'NumpadComma']
+    case 'slash':
+    case '/':
+      return ['Slash']
+    case 'backquote':
+    case '`':
+      return ['Backquote']
     case 'delete':
-      return 'Backspace'
+    case 'backspace':
+      return ['Backspace', 'Delete']
     case 'tab':
-      return 'Tab'
+      return ['Tab']
     case 'enter':
     case 'return':
-      return 'Enter'
+      return ['Enter', 'NumpadEnter']
     case 'shift':
-      return 'Shift'
+      return ['ShiftLeft', 'ShiftRight']
     case 'ctrl':
     case 'cntrl':
     case 'control':
-      return 'Control'
+      return ['ControlRight', 'ControlLeft']
     case 'option':
     case 'opt':
     case 'alt':
-      return 'Alt'
+      return ['AltLeft', 'AltRight']
     case 'esc':
     case 'escape':
-      return 'Escape'
+      return ['Escape']
     case 'space':
-      return ' '
+      return ['Space']
     case 'left':
-      return 'ArrowLeft'
+      return ['ArrowLeft']
     case 'up':
-      return 'ArrowUp'
+      return ['ArrowUp']
     case 'right':
-      return 'ArrowRight'
+      return ['ArrowRight']
     case 'down':
-      return 'ArrowDown'
+      return ['ArrowDown']
     case 'cmd':
     case 'command':
     case 'win':
     case 'meta':
-      return 'Meta'
+      return ['OSLeft', 'OSRight', 'MetaLeft', 'MetaRight']
     case 'plus':
-      return '+'
+    case 'equal':
+    case 'equals':
+    case '=':
+      return ['Equal']
     case 'minus':
-      return '-'
+      return ['Minus']
     case 'f1':
     case 'f2':
     case 'f3':
@@ -158,16 +201,17 @@ function toKey(str) {
     case 'f10':
     case 'f11':
     case 'f12':
-      return str.toUpperCase()
+      return [str.toUpperCase()]
     default:
-      return str
+      // Pass input through to allow using specific event codes directly:
+      return [input]
   }
 }
 
 function matchRule(rule, isDown) {
   function matchRuleStr(ruleStr) {
     const parts = parseRuleStr(ruleStr)
-    const results = parts.map(str => isDown(toKey(str)))
+    const results = parts.map(str => isDown(toCodes(str)))
     return results.every(r => r === true)
   }
 
@@ -184,7 +228,7 @@ function extractCaptureSet(rulesMap) {
     rules.forEach(rule => {
       const parts = parseRuleStr(rule)
       parts.forEach(part => {
-        captureSet.add(toKey(part))
+        toCodes(part).forEach(code => captureSet.add(code))
       })
     })
   })
@@ -262,9 +306,10 @@ const defaultConfig = {
   debug: false
 }
 
-// useKeyState ¿
+const defaultRulesMap = {}
 
-export const useKeyState = function(rulesMap, configOverrides) {
+// useKeyState ¿
+export const useKeyState = function(rulesMap = defaultRulesMap, configOverrides = {}) {
   const configRef = React.useRef({...defaultConfig, ...configOverrides})
   React.useEffect(() => {
     // configOverrides is likely to always be different:
@@ -289,35 +334,32 @@ export const useKeyState = function(rulesMap, configOverrides) {
   const [state, setState] = React.useState(() => mapRulesToState(rulesMap))
   // Query live key state and some common key utility fns:
   // This object gets merged into return object
-  const query = React.useMemo(
-    () => ({
-      pressed: input => {
-        return matchRule(input, isDown)
-      },
-      space: () => {
-        return isDown(toKey('space'))
-      },
-      shift: () => {
-        return isDown(toKey('shift'))
-      },
-      ctrl: () => {
-        return isDown(toKey('ctrl'))
-      },
-      alt: () => {
-        return isDown(toKey('alt'))
-      },
-      option: () => {
-        return isDown(toKey('option'))
-      },
-      meta: () => {
-        return isDown(toKey('meta'))
-      },
-      esc: () => {
-        return isDown(toKey('esc'))
-      }
-    }),
-    []
-  )
+  const keyStateQuery = React.useMemo(() => ({
+    pressed: input => {
+      return matchRule(input, isDown)
+    },
+    space: () => {
+      return isDown(toCodes('space'))
+    },
+    shift: () => {
+      return isDown(toCodes('shift'))
+    },
+    ctrl: () => {
+      return isDown(toCodes('ctrl'))
+    },
+    alt: () => {
+      return isDown(toCodes('alt'))
+    },
+    option: () => {
+      return isDown(toCodes('option'))
+    },
+    meta: () => {
+      return isDown(toCodes('meta'))
+    },
+    esc: () => {
+      return isDown(toCodes('esc'))
+    }
+  }))
 
   // Re-render the component if the key states have changed.
   // Must capture state value in a ref because the actual
@@ -342,35 +384,30 @@ export const useKeyState = function(rulesMap, configOverrides) {
     }
   }
 
-  function isDown(key) {
-    return keyMapRef.current[key] || false
+  function isDown(codes) {
+    const results = codes.map(code => keyMapRef.current[code] || false)
+    return results.some(r => r === true)
   }
 
   // Event handlers
 
   function handleDown(event) {
     if (configRef.current.debug) {
-      console.log('useKeyState: down', event.key)
+      console.log('useKeyState: down', event.code)
     }
 
     // Ignore events from input accepting elements (inputs etc)
     if (configRef.current.ignoreInputAcceptingElements && isInputAcceptingTarget(event)) {
       if (configRef.current.debug) {
-        console.log('useKeyState: Ignoring event from input accepting element:', event.key)
+        console.log('useKeyState: Ignoring event from input accepting element:', event.code)
       }
       return
-    }
-
-    // If Shift goes down, throw everything away because it modifies existing
-    // down key values so key up won't match
-    if (event.key === toKey('shift')) {
-      keyMapRef.current = {}
     }
 
     // Ignore handled event
     if (event.defaultPrevented && configRef.current.ignoreCapturedEvents) {
       if (configRef.current.debug) {
-        console.log('useKeyState: Ignoring captured up event:', event.key)
+        console.log('useKeyState: Ignoring captured up event:', event.code)
       }
       return
     }
@@ -378,7 +415,7 @@ export const useKeyState = function(rulesMap, configOverrides) {
     // Capture event if it is part of our rules and hook is configured to do so:
     if (configRef.current.captureEvents) {
       const captureSet = extractCaptureSet(rulesMapRef.current)
-      if (captureSet.has(event.key)) {
+      if (captureSet.has(event.code)) {
         event.preventDefault()
       }
     }
@@ -387,7 +424,7 @@ export const useKeyState = function(rulesMap, configOverrides) {
     if (
       configRef.current.ignoreRepeatEvents === false &&
       event.repeat &&
-      keyMapRef.current[event.key]
+      keyMapRef.current[event.code]
     ) {
       // handle it as a key up (drop every other frame, hack)
       handleUp(event)
@@ -395,33 +432,33 @@ export const useKeyState = function(rulesMap, configOverrides) {
     }
 
     // Handle key that didn't receive a key up event - happens whe meta or ctrl is down
-    if (keyMapRef.current[event.key]) {
-      delete keyMapRef.current[event.key]
+    if (keyMapRef.current[event.code]) {
+      delete keyMapRef.current[event.code]
       updateKeyState()
     }
 
-    keyMapRef.current[event.key] = true
+    keyMapRef.current[event.code] = true
     updateKeyState()
   }
 
   function handleUp(event) {
     if (configRef.current.debug) {
-      console.log('useKeyState: up', event.key)
+      console.log('useKeyState: up', event.code)
     }
     // Ignore events from input accepting elements (inputs etc)
     if (configRef.current.ignoreInputAcceptingElements && isInputAcceptingTarget(event)) {
       if (configRef.current.debug) {
-        console.log('useKeyState: Ignoring captured up event:', event.key)
+        console.log('useKeyState: Ignoring captured up event:', event.code)
       }
       return
     }
     // If Meta goes up, throw everything away because we might have stuck
     // keys
-    if (event.key === toKey('meta')) {
+    if (toCodes('meta').includes(event.code)) {
       keyMapRef.current = {}
     }
 
-    delete keyMapRef.current[event.key]
+    delete keyMapRef.current[event.code]
     updateKeyState()
   }
 
@@ -434,10 +471,12 @@ export const useKeyState = function(rulesMap, configOverrides) {
     }
   }, [])
 
-  return {
-    ...state,
-    query
+  // If we're passed an empty object or no params return keyStateQuery obj
+  if (rulesMap === defaultRulesMap || Object.entries(rulesMap).length === 0) {
+    return keyStateQuery
   }
+  // Otherwise return state map
+  return {...state, keyStateQuery}
 }
 
 export default {useKeyState: useKeyState}
