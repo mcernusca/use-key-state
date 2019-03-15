@@ -334,7 +334,7 @@ export const useKeyState = function(rulesMap = defaultRulesMap, configOverrides 
   const [state, setState] = React.useState(() => mapRulesToState(rulesMap))
   // Query live key state and some common key utility fns:
   // This object gets merged into return object
-  const keyStateQuery = React.useMemo(() => ({
+  const keyStateQuery = {
     pressed: input => {
       return matchRule(input, isDown)
     },
@@ -359,7 +359,7 @@ export const useKeyState = function(rulesMap = defaultRulesMap, configOverrides 
     esc: () => {
       return isDown(toCodes('esc'))
     }
-  }))
+  }
 
   // Re-render the component if the key states have changed.
   // Must capture state value in a ref because the actual
@@ -369,7 +369,7 @@ export const useKeyState = function(rulesMap = defaultRulesMap, configOverrides 
     stateRef.current = state
   })
 
-  function updateKeyState() {
+  const updateKeyState = React.useCallback(() => {
     const nextState = mapRulesToState(rulesMapRef.current, stateRef.current, isDown)
     const isEquivalentState = deepEqual(stateRef.current, nextState)
 
@@ -382,7 +382,7 @@ export const useKeyState = function(rulesMap = defaultRulesMap, configOverrides 
     if (!isEquivalentState) {
       setState(nextState)
     }
-  }
+  }, [])
 
   function isDown(codes) {
     const results = codes.map(code => keyMapRef.current[code] || false)
@@ -391,76 +391,82 @@ export const useKeyState = function(rulesMap = defaultRulesMap, configOverrides 
 
   // Event handlers
 
-  function handleDown(event) {
-    if (configRef.current.debug) {
-      console.log('useKeyState: down', event.code)
-    }
-
-    // Ignore events from input accepting elements (inputs etc)
-    if (configRef.current.ignoreInputAcceptingElements && isInputAcceptingTarget(event)) {
+  const handleUp = React.useCallback(
+    event => {
       if (configRef.current.debug) {
-        console.log('useKeyState: Ignoring event from input accepting element:', event.code)
+        console.log('useKeyState: up', event.code)
       }
-      return
-    }
-
-    // Ignore handled event
-    if (event.defaultPrevented && configRef.current.ignoreCapturedEvents) {
-      if (configRef.current.debug) {
-        console.log('useKeyState: Ignoring captured up event:', event.code)
+      // Ignore events from input accepting elements (inputs etc)
+      if (configRef.current.ignoreInputAcceptingElements && isInputAcceptingTarget(event)) {
+        if (configRef.current.debug) {
+          console.log('useKeyState: Ignoring captured up event:', event.code)
+        }
+        return
       }
-      return
-    }
-
-    // Capture event if it is part of our rules and hook is configured to do so:
-    if (configRef.current.captureEvents) {
-      const captureSet = extractCaptureSet(rulesMapRef.current)
-      if (captureSet.has(event.code)) {
-        event.preventDefault()
+      // If Meta goes up, throw everything away because we might have stuck
+      // keys
+      if (toCodes('meta').includes(event.code)) {
+        keyMapRef.current = {}
       }
-    }
 
-    // Handle key repeat
-    if (
-      configRef.current.ignoreRepeatEvents === false &&
-      event.repeat &&
-      keyMapRef.current[event.code]
-    ) {
-      // handle it as a key up (drop every other frame, hack)
-      handleUp(event)
-      return
-    }
-
-    // Handle key that didn't receive a key up event - happens whe meta or ctrl is down
-    if (keyMapRef.current[event.code]) {
       delete keyMapRef.current[event.code]
       updateKeyState()
-    }
+    },
+    [updateKeyState]
+  )
 
-    keyMapRef.current[event.code] = true
-    updateKeyState()
-  }
-
-  function handleUp(event) {
-    if (configRef.current.debug) {
-      console.log('useKeyState: up', event.code)
-    }
-    // Ignore events from input accepting elements (inputs etc)
-    if (configRef.current.ignoreInputAcceptingElements && isInputAcceptingTarget(event)) {
+  const handleDown = React.useCallback(
+    event => {
       if (configRef.current.debug) {
-        console.log('useKeyState: Ignoring captured up event:', event.code)
+        console.log('useKeyState: down', event.code)
       }
-      return
-    }
-    // If Meta goes up, throw everything away because we might have stuck
-    // keys
-    if (toCodes('meta').includes(event.code)) {
-      keyMapRef.current = {}
-    }
 
-    delete keyMapRef.current[event.code]
-    updateKeyState()
-  }
+      // Ignore events from input accepting elements (inputs etc)
+      if (configRef.current.ignoreInputAcceptingElements && isInputAcceptingTarget(event)) {
+        if (configRef.current.debug) {
+          console.log('useKeyState: Ignoring event from input accepting element:', event.code)
+        }
+        return
+      }
+
+      // Ignore handled event
+      if (event.defaultPrevented && configRef.current.ignoreCapturedEvents) {
+        if (configRef.current.debug) {
+          console.log('useKeyState: Ignoring captured up event:', event.code)
+        }
+        return
+      }
+
+      // Capture event if it is part of our rules and hook is configured to do so:
+      if (configRef.current.captureEvents) {
+        const captureSet = extractCaptureSet(rulesMapRef.current)
+        if (captureSet.has(event.code)) {
+          event.preventDefault()
+        }
+      }
+
+      // Handle key repeat
+      if (
+        configRef.current.ignoreRepeatEvents === false &&
+        event.repeat &&
+        keyMapRef.current[event.code]
+      ) {
+        // handle it as a key up (drop every other frame, hack)
+        handleUp(event)
+        return
+      }
+
+      // Handle key that didn't receive a key up event - happens whe meta or ctrl is down
+      if (keyMapRef.current[event.code]) {
+        delete keyMapRef.current[event.code]
+        updateKeyState()
+      }
+
+      keyMapRef.current[event.code] = true
+      updateKeyState()
+    },
+    [handleUp, updateKeyState]
+  )
 
   React.useEffect(() => {
     DocumentEventListener.addEventListener('keydown', handleDown)
@@ -469,7 +475,7 @@ export const useKeyState = function(rulesMap = defaultRulesMap, configOverrides 
       DocumentEventListener.removeEventListener('keydown', handleDown)
       DocumentEventListener.removeEventListener('keyup', handleUp)
     }
-  }, [])
+  }, [handleDown, handleUp])
 
   // If we're passed an empty object or no params return keyStateQuery obj
   if (rulesMap === defaultRulesMap || Object.entries(rulesMap).length === 0) {
