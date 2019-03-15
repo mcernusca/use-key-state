@@ -102,7 +102,7 @@ const { asd } = useKeyState({ asd: isEditing ? "a+s+d" : "" });
 If you just need a way to query the pressed keys and not re-render your component you can instantiate the hook with no parameters and get a query object with a few helper methods on it:
 
 ```javascript
-const { keyStateQuery } = useKeyState()
+const query = useKeyState()
 
 if (query.pressed('space') {
   // true while space key is pressed
