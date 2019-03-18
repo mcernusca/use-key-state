@@ -21,13 +21,13 @@ npm install use-key-state --save-dev
 Pass it a map of hotkey rules as strings and it hands back one of the same shape:
 
 ```javascript
-const { asd } = useKeyState({ asd: "a+s+d" });
+const {asd} = useKeyState({asd: 'a+s+d'})
 ```
 
 Or pass it an array of rules per key:
 
 ```javascript
-const { asd, copy } = useKeyState({ asd: "a+s+d", copy: ["meta+c", "ctrl+c"] });
+const {asd, copy} = useKeyState({asd: 'a+s+d', copy: ['meta+c', 'ctrl+c']})
 ```
 
 The values are state objects with three boolean properties: `pressed`, `down` and `up`.
@@ -51,7 +51,7 @@ useEffect(() => {
 The pressed property is appropriate to use if you need to base your render logic on the pressed state:
 
 ```jsx
-<div className={asd.pressed ? "is-active" : "is-not-active"} />
+<div className={asd.pressed ? 'is-active' : 'is-not-active'} />
 ```
 
 or inside an event handler or other form of render loop:
@@ -61,7 +61,7 @@ handleDrag = e => {
   if (asd.pressed) {
     // do things differently while key is pressed
   }
-};
+}
 ```
 
 ### Document Events
@@ -78,7 +78,7 @@ const defaultConfig = {
   ignoreRepeatEvents: true, // filter out repeat key events (whos event.repeat property is true)
   ignoreCapturedEvents: true, // respect the defaultPrevented event flag
   ignoreInputAcceptingElements: true // filter out events from all forms of inputs
-};
+}
 ```
 
 Configuration is at the hook level - feel free to use multiple hooks in the same component where needed.
@@ -88,13 +88,13 @@ Configuration is at the hook level - feel free to use multiple hooks in the same
 Both the rules map and the configuration objects can be updated dynamically. For example, only capture if we're in editing mode:
 
 ```javascript
-const { asd } = useKeyState({ asd: "a+s+d" }, { captureEvents: isEditing });
+const {asd} = useKeyState({asd: 'a+s+d'}, {captureEvents: isEditing})
 ```
 
 or, don't bind at all unless we're editing:
 
 ```javascript
-const { asd } = useKeyState({ asd: isEditing ? "a+s+d" : "" });
+const {asd} = useKeyState({asd: isEditing ? 'a+s+d' : ''})
 ```
 
 ### Query
@@ -102,7 +102,7 @@ const { asd } = useKeyState({ asd: isEditing ? "a+s+d" : "" });
 If you just need a way to query the pressed keys and not re-render your component you can instantiate the hook with no parameters and get a query object with a few helper methods on it:
 
 ```javascript
-const query = useKeyState()
+const query = useKeyState().keyStateQuery
 
 if (query.pressed('space') {
   // true while space key is pressed
@@ -158,9 +158,9 @@ If you have rules that are a subset of another rule they will both match when th
 // If undo (meta+z) matches, make sure it isn't a redo (shift+meta+z)
 if (undo.down) {
   if (redo.down) {
-    return void onRedo();
+    return void onRedo()
   }
-  return void onUndo();
+  return void onUndo()
 }
 ```
 
@@ -168,28 +168,28 @@ Avoid separate instances of the useKeyState hook that contain overlapping rules 
 
 ```javascript
 // We want to capture and support key repeat for arrow keys while editing:
-const { upArrow, downArrow, leftArrow, rightArrow } = useKeyState(
+const {upArrow, downArrow, leftArrow, rightArrow} = useKeyState(
   {
-    upArrow: isEditing ? "up" : "",
-    downArrow: isEditing ? "down" : "",
-    leftArrow: isEditing ? "left" : "",
-    rightArrow: isEditing ? "right" : ""
+    upArrow: isEditing ? 'up' : '',
+    downArrow: isEditing ? 'down' : '',
+    leftArrow: isEditing ? 'left' : '',
+    rightArrow: isEditing ? 'right' : ''
   },
   {
     ignoreRepeatEvents: false,
     captureEvents: isEdit && focusKey
   }
-);
+)
 // But we don't want to support key repeat for the undo and redo key bindings
-const { forward, backward, backspace, tab, undo, redo } = useKeyState(
+const {forward, backward, backspace, tab, undo, redo} = useKeyState(
   {
-    undo: isEdit ? ["meta+z", "ctrl+z"] : "",
-    redo: isEdit ? ["shift+meta+z", "shift+ctrl+z"] : ""
+    undo: isEdit ? ['meta+z', 'ctrl+z'] : '',
+    redo: isEdit ? ['shift+meta+z', 'shift+ctrl+z'] : ''
   },
   {
     captureEvents: isEditing
   }
-);
+)
 ```
 
 That's it!
@@ -220,13 +220,13 @@ If you're still confused, this is essentially hook sugar over a callback API lik
 
 ```javascript
 // not real code
-KeyState.on("a+s+d", down => {
-  this.setState({ asdPressed: down }, () => {
+KeyState.on('a+s+d', down => {
+  this.setState({asdPressed: down}, () => {
     if (down) {
       // do the down thing
     } else {
       // do the up thing
     }
-  });
-});
+  })
+})
 ```

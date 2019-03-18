@@ -268,12 +268,16 @@ function validateRulesMap(map) {
     const isArray = Array.isArray(value)
     const isString = typeof value === 'string'
     if (!isString && !isArray) {
-      throw new Error(`useKeyState: expecting string or array value for key ${key}.`)
+      throw new Error(
+        `useKeyState: expecting string or array value for key ${key}.`
+      )
     }
     if (isArray) {
       value.forEach(rule => {
         if (typeof rule !== 'string') {
-          throw new Error(`useKeyState: expecting array of strings for key ${key}`)
+          throw new Error(
+            `useKeyState: expecting array of strings for key ${key}`
+          )
         }
       })
     }
@@ -306,10 +310,8 @@ const defaultConfig = {
   debug: false
 }
 
-const defaultRulesMap = {}
-
 // useKeyState ¿
-export const useKeyState = function(rulesMap = defaultRulesMap, configOverrides = {}) {
+export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
   const configRef = React.useRef({...defaultConfig, ...configOverrides})
   React.useEffect(() => {
     // configOverrides is likely to always be different:
@@ -370,7 +372,11 @@ export const useKeyState = function(rulesMap = defaultRulesMap, configOverrides 
   })
 
   const updateKeyState = React.useCallback(() => {
-    const nextState = mapRulesToState(rulesMapRef.current, stateRef.current, isDown)
+    const nextState = mapRulesToState(
+      rulesMapRef.current,
+      stateRef.current,
+      isDown
+    )
     const isEquivalentState = deepEqual(stateRef.current, nextState)
 
     if (configRef.current.debug) {
@@ -397,7 +403,10 @@ export const useKeyState = function(rulesMap = defaultRulesMap, configOverrides 
         console.log('useKeyState: up', event.code)
       }
       // Ignore events from input accepting elements (inputs etc)
-      if (configRef.current.ignoreInputAcceptingElements && isInputAcceptingTarget(event)) {
+      if (
+        configRef.current.ignoreInputAcceptingElements &&
+        isInputAcceptingTarget(event)
+      ) {
         if (configRef.current.debug) {
           console.log('useKeyState: Ignoring captured up event:', event.code)
         }
@@ -422,9 +431,15 @@ export const useKeyState = function(rulesMap = defaultRulesMap, configOverrides 
       }
 
       // Ignore events from input accepting elements (inputs etc)
-      if (configRef.current.ignoreInputAcceptingElements && isInputAcceptingTarget(event)) {
+      if (
+        configRef.current.ignoreInputAcceptingElements &&
+        isInputAcceptingTarget(event)
+      ) {
         if (configRef.current.debug) {
-          console.log('useKeyState: Ignoring event from input accepting element:', event.code)
+          console.log(
+            'useKeyState: Ignoring event from input accepting element:',
+            event.code
+          )
         }
         return
       }
@@ -477,11 +492,6 @@ export const useKeyState = function(rulesMap = defaultRulesMap, configOverrides 
     }
   }, [handleDown, handleUp])
 
-  // If we're passed an empty object or no params return keyStateQuery obj
-  if (rulesMap === defaultRulesMap || Object.entries(rulesMap).length === 0) {
-    return keyStateQuery
-  }
-  // Otherwise return state map
   return {...state, keyStateQuery}
 }
 

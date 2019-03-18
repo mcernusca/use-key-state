@@ -3,9 +3,10 @@
   "description": "Keyboard events as values for React (hook)",
   "homepage": "https://use-key-state.mihaicernusca.com",
   "author": "Mihai Cernusca <mcernusca@gmail.com> (http://mihaicernusca.com)",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "license": "MIT",
   "main": "index.js",
+  "types": "index.d.ts",
   "repository": {
     "type": "git",
     "url": "git@github.com:mcernusca/use-key-state.git"
@@ -31,6 +32,7 @@
     "react-dom": "16.8.3"
   },
   "files": [
-    "index.js"
+    "index.js",
+    "index.d.ts"
   ]
 }
