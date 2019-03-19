@@ -3,7 +3,7 @@
   "description": "Keyboard events as values for React (hook)",
   "homepage": "https://use-key-state.mihaicernusca.com",
   "author": "Mihai Cernusca <mcernusca@gmail.com> (http://mihaicernusca.com)",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "license": "MIT",
   "main": "index.js",
   "types": "index.d.ts",
