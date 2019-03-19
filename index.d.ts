@@ -1,38 +1,43 @@
 export type KeyState = {
-  pressed: boolean
-  down: boolean
-  up: boolean
+    pressed: boolean
+    down: boolean
+    up: boolean
 }
 
 export type KeyStateOptions = {
-  captureEvents?: boolean
-  ignoreRepeatEvents?: boolean
-  ignoreCapturedEvents?: boolean
-  ignoreInputAcceptingElements?: boolean
-  debug?: boolean
+    captureEvents?: boolean
+    ignoreRepeatEvents?: boolean
+    ignoreCapturedEvents?: boolean
+    ignoreInputAcceptingElements?: boolean
+    debug?: boolean
 }
 
 export type KeyRules = {
-  [x: string]: string | string[]
+    [x: string]: string | string[]
 }
 
 export type KeyStateQuery = {
-  pressed: (input: string) => boolean
-  space: () => boolean
-  shift: () => boolean
-  ctrl: () => boolean
-  alt: () => boolean
-  option: () => boolean
-  meta: () => boolean
-  esc: () => boolean
+    pressed: ( input: string ) => boolean
+    space: () => boolean
+    shift: () => boolean
+    ctrl: () => boolean
+    alt: () => boolean
+    option: () => boolean
+    meta: () => boolean
+    esc: () => boolean
 }
 
-export type KeyStates = {
-  [x: string]: KeyState
-  keyStateQuery: KeyStateQuery
+type KeyStateProps<T> = {
+    [P in keyof T]: KeyState
 }
 
-export function useKeyState(
-  rulesMap?: KeyRules,
-  configOverrides?: KeyStateOptions
-): KeyStates
+type KeyStateQueryObject = {
+    keyStateQuery: KeyStateQuery
+}
+
+export type KeyStates<T> = KeyStateProps<T> & KeyStateQueryObject
+
+export function useKeyState<T extends KeyRules> (
+    rulesMap?: T,
+    configOverrides?: KeyStateOptions
+): KeyStates<T>
