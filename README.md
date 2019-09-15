@@ -47,7 +47,7 @@ React.useEffect(() => {
   } else if (asd.up) {
     dispatch({type:'do-the-up-thing'})
   }
-})
+}, [asd])
 ```
 
 The pressed property is appropriate to use if you need to base your render logic on the pressed state:
