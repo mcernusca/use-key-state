@@ -21,6 +21,8 @@ npm install use-key-state --save-dev
 Pass it a map of hotkey rules as strings and it hands back one of the same shape:
 
 ```javascript
+import {useKeyState} from 'use-key-state'
+
 const {asd} = useKeyState({asd: 'a+s+d'})
 ```
 
@@ -39,13 +41,13 @@ Use `down` or `up` if you want to know when the `keydown` and `keyup` events tha
 This behavior is also what makes it safe to use because if it returns true in one render it is guaranteed to return false at the next:
 
 ```javascript
-useEffect(() => {
+React.useEffect(() => {
   if (asd.down) {
     dispatch({type:'do-the-down-thing'})
   } else if (asd.up) {
     dispatch({type:'do-the-up-thing'})
   }
-)
+})
 ```
 
 The pressed property is appropriate to use if you need to base your render logic on the pressed state:
