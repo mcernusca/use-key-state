@@ -5,8 +5,11 @@
   "author": "Mihai Cernusca <mcernusca@gmail.com> (http://mihaicernusca.com)",
   "version": "0.1.6",
   "license": "MIT",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "dist/index.js",
+  "umd:main": "dist/index.umd.js",
+  "module": "dist/index.es.js",
+  "source": "src/index.js",
+  "types": "types/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git@github.com:mcernusca/use-key-state.git"
@@ -24,15 +27,17 @@
     "hotkey",
     "shortcut"
   ],
+  "scripts": {
+    "prebuild": "rm -rf ./dist",
+    "build": "microbundle --sourcemap false --no-compress",
+    "dev": "microbundle watch --sourcemap false --no-compress",
+    "prepublishOnly": "yarn run build"
+  },
   "peerDependencies": {
     "react": ">= 16.8.0"
   },
   "devDependencies": {
-    "react": "16.8.3",
-    "react-dom": "16.8.3"
-  },
-  "files": [
-    "index.js",
-    "index.d.ts"
-  ]
+    "microbundle": "^0.11.0",
+    "react": "16.8.3"
+  }
 }

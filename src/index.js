@@ -29,7 +29,7 @@ class EventEmitter {
   emit(eventName, ...args) {
     // Traverse set in reverse so that deepest child has a
     // chance to capture the event. Mimics DOM bubbling
-    ;[...this._getEventListByName(eventName)].reverse().forEach(
+    ;[...Array.from(this._getEventListByName(eventName))].reverse().forEach(
       function(fn) {
         fn.apply(this, args)
       }.bind(this)
@@ -311,7 +311,7 @@ const defaultConfig = {
 }
 
 // useKeyState ¿
-export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
+const useKeyState = function(rulesMap = {}, configOverrides = {}) {
   const configRef = React.useRef({...defaultConfig, ...configOverrides})
   React.useEffect(() => {
     // configOverrides is likely to always be different:
