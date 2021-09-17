@@ -149,8 +149,8 @@ Consider the example:
 
 ```javascript
 const {forward, backward, backspace, tab, undo, redo} = useKeyState({
-  undo: 'meta+z', 'ctrl+z',
-  redo: 'shift+meta+z', 'shift+ctrl+z'
+  undo: ['meta+z', 'ctrl+z'],
+  redo: ['shift+meta+z', 'shift+ctrl+z']
 })
 ```
 
