@@ -13,7 +13,7 @@ Example: https://codesandbox.io/s/n4o5z6yk3l
 ## Install
 
 ```text
-npm install use-key-state --save-dev
+npm install use-key-state
 ```
 
 ## Usage
