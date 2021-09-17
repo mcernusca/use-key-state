@@ -311,7 +311,7 @@ const defaultConfig = {
 }
 
 // useKeyState ¿
-const useKeyState = function(rulesMap = {}, configOverrides = {}) {
+export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
   const configRef = React.useRef({...defaultConfig, ...configOverrides})
   React.useEffect(() => {
     // configOverrides is likely to always be different:
@@ -494,5 +494,3 @@ const useKeyState = function(rulesMap = {}, configOverrides = {}) {
 
   return {...state, keyStateQuery}
 }
-
-export default {useKeyState: useKeyState}

@@ -29,15 +29,15 @@
   ],
   "scripts": {
     "prebuild": "rm -rf ./dist",
-    "build": "microbundle --sourcemap false --no-compress",
-    "dev": "microbundle watch --sourcemap false --no-compress",
+    "build": "microbundle --sourcemap false --no-compress --no-generateTypes",
+    "dev": "microbundle watch --sourcemap false --no-compress --no-generateTypes",
     "prepublishOnly": "yarn run build"
   },
   "peerDependencies": {
     "react": ">= 16.8.0"
   },
   "devDependencies": {
-    "microbundle": "^0.11.0",
+    "microbundle": "^0.13.3",
     "react": "16.8.3"
   }
 }
