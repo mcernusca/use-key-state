@@ -9,6 +9,7 @@ export type KeyStateOptions = {
   ignoreRepeatEvents?: boolean
   ignoreCapturedEvents?: boolean
   ignoreInputAcceptingElements?: boolean
+  priority?: number
   debug?: boolean
 }
 
@@ -39,3 +40,11 @@ export function useKeyState<T extends KeyRules>(
   rulesMap?: T,
   configOverrides?: KeyStateOptions
 ): KeyStates<T>
+
+export const DepthContext: React.Context<number>
+
+export interface KeyStateLayerProps {
+  children: ReactNode
+}
+
+export function KeyStateLayer(props: KeyStateLayerProps): React.JSX.Element

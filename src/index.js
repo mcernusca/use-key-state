@@ -9,34 +9,44 @@ class EventEmitter {
   constructor() {
     this.events = {}
   }
-  _getEventListByName(eventName) {
+  _getWeightedEventListByName(eventName) {
     if (typeof this.events[eventName] === 'undefined') {
-      this.events[eventName] = new Set()
+      this.events[eventName] = []
     }
     return this.events[eventName]
   }
-  on(eventName, fn) {
-    this._getEventListByName(eventName).add(fn)
+  on(eventName, fn, priority = 0) {
+    const weightedLists = this._getWeightedEventListByName(eventName)
+    if (!weightedLists[priority]) {
+      weightedLists[priority] = new Set()
+    }
+    weightedLists[priority].add(fn)
   }
   once(eventName, fn) {
     const self = this
-    const onceFn = function(...args) {
+    const onceFn = function (...args) {
       self.removeListener(eventName, onceFn)
       fn.apply(self, args)
     }
     this.on(eventName, onceFn)
   }
   emit(eventName, ...args) {
-    // Traverse set in reverse so that deepest child has a
-    // chance to capture the event. Mimics DOM bubbling
-    ;[...Array.from(this._getEventListByName(eventName))].reverse().forEach(
-      function(fn) {
+    const prioritizedCallbacks = [
+      ...this._getWeightedEventListByName(eventName),
+    ]
+      .reverse() // highest weight first
+      .map((list) => Array.from(list)) // preserving insertion order
+      .flat()
+    prioritizedCallbacks.forEach(
+      function (fn) {
         fn.apply(this, args)
       }.bind(this)
     )
   }
   removeListener(eventName, fn) {
-    this._getEventListByName(eventName).delete(fn)
+    this._getWeightedEventListByName(eventName).forEach((list) =>
+      list.delete(fn)
+    )
   }
 }
 
@@ -49,15 +59,15 @@ function emitDomEvent(event) {
 }
 
 const DocumentEventListener = {
-  addEventListener(eventName, listener) {
+  addEventListener(eventName, listener, priority) {
     if (!boundEvents[eventName]) {
       document.addEventListener(eventName, emitDomEvent, true)
     }
-    eventEmitter.on(eventName, listener)
+    eventEmitter.on(eventName, listener, priority)
   },
   removeEventListener(eventName, listener) {
     eventEmitter.removeListener(eventName, listener)
-  }
+  },
 }
 
 // Key State
@@ -86,21 +96,21 @@ function _set(context, key, value) {
 }
 
 Object.defineProperty(KeyState.prototype, 'down', {
-  get: function() {
+  get: function () {
     return _get(this, 'down')
   },
-  set: function(value) {
-    return _set(this, 'down', value)
-  }
+  set: function (value) {
+    _set(this, 'down', value)
+  },
 })
 
 Object.defineProperty(KeyState.prototype, 'up', {
-  get: function() {
+  get: function () {
     return _get(this, 'up')
   },
-  set: function(value) {
-    return _set(this, 'up', value)
-  }
+  set: function (value) {
+    _set(this, 'up', value)
+  },
 })
 
 // Utils
@@ -211,24 +221,24 @@ function toCodes(input) {
 function matchRule(rule, isDown) {
   function matchRuleStr(ruleStr) {
     const parts = parseRuleStr(ruleStr)
-    const results = parts.map(str => isDown(toCodes(str)))
-    return results.every(r => r === true)
+    const results = parts.map((str) => isDown(toCodes(str)))
+    return results.every((r) => r === true)
   }
 
   if (Array.isArray(rule)) {
-    return rule.some(ruleStr => matchRuleStr(ruleStr, isDown) === true)
+    return rule.some((ruleStr) => matchRuleStr(ruleStr, isDown) === true)
   }
   return matchRuleStr(rule, isDown)
 }
 
 function extractCaptureSet(rulesMap) {
   const captureSet = new Set()
-  Object.entries(rulesMap).forEach(([_, value]) => {
+  Object.entries(rulesMap).forEach(([, value]) => {
     const rules = Array.isArray(value) ? value : [value]
-    rules.forEach(rule => {
+    rules.forEach((rule) => {
       const parts = parseRuleStr(rule)
-      parts.forEach(part => {
-        toCodes(part).forEach(code => captureSet.add(code))
+      parts.forEach((part) => {
+        toCodes(part).forEach((code) => captureSet.add(code))
       })
     })
   })
@@ -236,7 +246,7 @@ function extractCaptureSet(rulesMap) {
 }
 
 function parseRuleStr(rule) {
-  return rule.split('+').map(str => str.trim())
+  return rule.split('+').map((str) => str.trim())
 }
 
 function mapRulesToState(rulesMap, prevState = {}, isDown = () => false) {
@@ -273,7 +283,7 @@ function validateRulesMap(map) {
       )
     }
     if (isArray) {
-      value.forEach(rule => {
+      value.forEach((rule) => {
         if (typeof rule !== 'string') {
           throw new Error(
             `useKeyState: expecting array of strings for key ${key}`
@@ -307,11 +317,32 @@ const defaultConfig = {
   ignoreRepeatEvents: true, // filter out repeat key events (whos event.repeat property is true)
   ignoreCapturedEvents: true, // respect the defaultPrevented event flag
   ignoreInputAcceptingElements: true, // filter out events from all forms of inputs
-  debug: false
+  priority: undefined, // see DepthContext below
+  debug: false,
+}
+
+// DepthContext
+// We want to mimic the DOM bubbling behavior of giving deeper children a chance to capture events.
+// We subscribe to a global key handler on component mount in a filo fashion (useEffect (our subscription) is called in a bottom-up fashion).
+// Late mounted children however would get added to the end of the priority list despite being deeper in the tree.
+// To enforce a depth priority, you can wrap your app layers in <KeyStateLayer> components that keep track of depth relative to parent <KeyStateLayer>.
+// Key callbacks will be sorted first by depth and then by insertion order.
+// Alternatively set priority config option. This will override other default or inferred priorities.
+
+export const DepthContext = React.createContext(0)
+
+export function KeyStateLayer({children}) {
+  const parentDepth = React.useContext(DepthContext)
+  return (
+    <DepthContext.Provider value={parentDepth + 1}>
+      {children}
+    </DepthContext.Provider>
+  )
 }
 
 // useKeyState ¿
-export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
+
+export const useKeyState = function (rulesMap = {}, configOverrides = {}) {
   const configRef = React.useRef({...defaultConfig, ...configOverrides})
   React.useEffect(() => {
     // configOverrides is likely to always be different:
@@ -319,6 +350,9 @@ export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
       configRef.current = {...defaultConfig, ...configOverrides}
     }
   }, [configOverrides])
+  const inferredPriority = React.useContext(DepthContext)
+  const depth = configRef.current.priority || inferredPriority || 0
+
   // Maintain a copy of the rules map passed in
   const rulesMapRef = React.useRef({})
   // Validate and update rulesMap when it changes to enable dynamic rules
@@ -337,7 +371,7 @@ export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
   // Query live key state and some common key utility fns:
   // This object gets merged into return object
   const keyStateQuery = {
-    pressed: input => {
+    pressed: (input) => {
       return matchRule(input, isDown)
     },
     space: () => {
@@ -360,7 +394,7 @@ export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
     },
     esc: () => {
       return isDown(toCodes('esc'))
-    }
+    },
   }
 
   // Re-render the component if the key states have changed.
@@ -381,7 +415,7 @@ export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
 
     if (configRef.current.debug) {
       console.log('useKeyState: rulesMap', {...rulesMapRef.current}, 'keyMap', {
-        ...keyMapRef.current
+        ...keyMapRef.current,
       })
     }
 
@@ -391,21 +425,25 @@ export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
   }, [])
 
   function isDown(codes) {
-    const results = codes.map(code => keyMapRef.current[code] || false)
-    return results.some(r => r === true)
+    const results = codes.map((code) => keyMapRef.current[code] || false)
+    return results.some((r) => r === true)
   }
 
   // Event handlers
 
   const handleUp = React.useCallback(
-    event => {
+    (event) => {
       if (configRef.current.debug) {
         console.log('useKeyState: up', event.code)
       }
+      // If we have an up event for an already captured down, process it regardless of source.
+      // This is because the down could have come in before the input got focus.
+      const isDown = !!keyMapRef.current[event.code]
       // Ignore events from input accepting elements (inputs etc)
       if (
         configRef.current.ignoreInputAcceptingElements &&
-        isInputAcceptingTarget(event)
+        isInputAcceptingTarget(event) &&
+        !isDown
       ) {
         if (configRef.current.debug) {
           console.log('useKeyState: Ignoring captured up event:', event.code)
@@ -413,7 +451,8 @@ export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
         return
       }
       // If Meta goes up, throw everything away because we might have stuck
-      // keys
+      // keys (OSX gets no keyup events while the cmd key is held down)
+      // http://web.archive.org/web/20160304022453/http://bitspushedaround.com/on-a-few-things-you-may-not-know-about-the-hellish-command-key-and-javascript-events/
       if (toCodes('meta').includes(event.code)) {
         keyMapRef.current = {}
       }
@@ -425,7 +464,7 @@ export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
   )
 
   const handleDown = React.useCallback(
-    event => {
+    (event) => {
       if (configRef.current.debug) {
         console.log('useKeyState: down', event.code)
       }
@@ -447,7 +486,7 @@ export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
       // Ignore handled event
       if (event.defaultPrevented && configRef.current.ignoreCapturedEvents) {
         if (configRef.current.debug) {
-          console.log('useKeyState: Ignoring captured up event:', event.code)
+          console.log('useKeyState: Ignoring captured down event:', event.code)
         }
         return
       }
@@ -461,17 +500,22 @@ export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
       }
 
       // Handle key repeat
-      if (
-        configRef.current.ignoreRepeatEvents === false &&
-        event.repeat &&
-        keyMapRef.current[event.code]
-      ) {
-        // handle it as a key up (drop every other frame, hack)
-        handleUp(event)
+      if (event.repeat && keyMapRef.current[event.code]) {
+        if (configRef.current.ignoreRepeatEvents) {
+          if (configRef.current.debug) {
+            console.log(
+              'useKeyState: Ignoring event from repeat key event:',
+              event.code
+            )
+          }
+        } else {
+          // handle it as a key up (drop every other frame, hack)
+          handleUp(event)
+        }
         return
       }
 
-      // Handle key that didn't receive a key up event - happens whe meta or ctrl is down
+      // Handle key that didn't receive a key up event - happens when meta key is down
       if (keyMapRef.current[event.code]) {
         delete keyMapRef.current[event.code]
         updateKeyState()
@@ -483,14 +527,31 @@ export const useKeyState = function(rulesMap = {}, configOverrides = {}) {
     [handleUp, updateKeyState]
   )
 
+  // Mark handlers to help debug callback order
+  if (configRef.current.debug) {
+    handleDown.prototype.debugFlag = configRef.current.debug
+    handleUp.prototype.debugFlag = configRef.current.debug
+    window.keyStateEventEmitter = eventEmitter
+  }
+
+  const handleBlur = React.useCallback(() => {
+    if (configRef.current.debug) {
+      console.log('useKeyState: clearing keyMap on document blur')
+    }
+    keyMapRef.current = {}
+    updateKeyState()
+  }, [updateKeyState])
+
   React.useEffect(() => {
-    DocumentEventListener.addEventListener('keydown', handleDown)
-    DocumentEventListener.addEventListener('keyup', handleUp)
+    DocumentEventListener.addEventListener('keydown', handleDown, depth)
+    DocumentEventListener.addEventListener('keyup', handleUp, depth)
+    window.addEventListener('blur', handleBlur)
     return () => {
       DocumentEventListener.removeEventListener('keydown', handleDown)
       DocumentEventListener.removeEventListener('keyup', handleUp)
+      window.removeEventListener('blur', handleBlur)
     }
-  }, [handleDown, handleUp])
+  }, [handleDown, handleUp, handleBlur, depth])
 
   return {...state, keyStateQuery}
 }
