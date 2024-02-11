@@ -43,9 +43,9 @@ This behavior is also what makes it safe to use because if it returns true in on
 ```javascript
 React.useEffect(() => {
   if (asd.down) {
-    dispatch({type:'do-the-down-thing'})
+    dispatch({type: 'do-the-down-thing'})
   } else if (asd.up) {
-    dispatch({type:'do-the-up-thing'})
+    dispatch({type: 'do-the-up-thing'})
   }
 }, [asd])
 ```
@@ -59,7 +59,7 @@ The pressed property is appropriate to use if you need to base your render logic
 or inside an event handler or other form of render loop:
 
 ```javascript
-handleDrag = e => {
+handleDrag = (e) => {
   if (asd.pressed) {
     // do things differently while key is pressed
   }
@@ -68,7 +68,24 @@ handleDrag = e => {
 
 ### Document Events
 
-While useKeyState hooks maintain their own internal state, they share one singleton document event listener making them relatively cheap. Events are called in a last-in-first-out order giving your deeper components a chance to handle the event first. If you use multiple instances of the useKeyState hook in one component the same rule applies.
+While useKeyState hooks maintain their own internal state, they share one singleton document event listener making them relatively cheap. Events are called in a first-in-last-out order giving your deeper components a chance to handle the event first. If you use multiple instances of the useKeyState hook in one component the same rule applies.
+
+Late mounted children however get added to the end of the priority list despite being deeper in the tree.
+In complex apps where you rely on deterministic event order you can enforce a depth priority by wrapping your app layers in `<KeyStateLayer>` components which keep track of depth relative to parent `<KeyStateLayer>`. Key callbacks will be sorted first by depth and then by insertion order.
+
+```javascript
+import {KeyStateLayer} from 'use-key-state'
+
+function Page() {
+  return (
+    <KeyStateLayer>
+      <Content />
+    </KeyStateLayer>
+  )
+}
+```
+
+Alternatively set priority config option (see Configuration below). This will override other default or inferred priorities.
 
 ### Configuration
 
@@ -79,7 +96,9 @@ const defaultConfig = {
   captureEvents: false, // call event.preventDefault()
   ignoreRepeatEvents: true, // filter out repeat key events (whos event.repeat property is true)
   ignoreCapturedEvents: true, // respect the defaultPrevented event flag
-  ignoreInputAcceptingElements: true // filter out events from all forms of inputs
+  ignoreInputAcceptingElements: true, // filter out events from all forms of inputs
+  priority: undefined, // see Document Events above
+  debug: false, // enabled debug logging
 }
 ```
 
@@ -150,7 +169,7 @@ Consider the example:
 ```javascript
 const {forward, backward, backspace, tab, undo, redo} = useKeyState({
   undo: ['meta+z', 'ctrl+z'],
-  redo: ['shift+meta+z', 'shift+ctrl+z']
+  redo: ['shift+meta+z', 'shift+ctrl+z'],
 })
 ```
 
@@ -175,21 +194,21 @@ const {upArrow, downArrow, leftArrow, rightArrow} = useKeyState(
     upArrow: isEditing ? 'up' : '',
     downArrow: isEditing ? 'down' : '',
     leftArrow: isEditing ? 'left' : '',
-    rightArrow: isEditing ? 'right' : ''
+    rightArrow: isEditing ? 'right' : '',
   },
   {
     ignoreRepeatEvents: false,
-    captureEvents: isEdit && focusKey
+    captureEvents: isEdit && focusKey,
   }
 )
 // But we don't want to support key repeat for the undo and redo key bindings
 const {forward, backward, backspace, tab, undo, redo} = useKeyState(
   {
     undo: isEdit ? ['meta+z', 'ctrl+z'] : '',
-    redo: isEdit ? ['shift+meta+z', 'shift+ctrl+z'] : ''
+    redo: isEdit ? ['shift+meta+z', 'shift+ctrl+z'] : '',
   },
   {
-    captureEvents: isEditing
+    captureEvents: isEditing,
   }
 )
 ```
@@ -222,7 +241,7 @@ If you're still confused, this is essentially hook sugar over a callback API lik
 
 ```javascript
 // not real code
-KeyState.on('a+s+d', down => {
+KeyState.on('a+s+d', (down) => {
   this.setState({asdPressed: down}, () => {
     if (down) {
       // do the down thing
