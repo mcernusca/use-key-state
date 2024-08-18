@@ -323,7 +323,7 @@ export const DepthContext = React.createContext(0);
 
 export function KeyStateLayer({ children }) {
   const parentDepth = React.useContext(DepthContext);
-  return <DepthContext.Provider value={parentDepth + 1}>{children}</DepthContext.Provider>;
+  return React.createElement(DepthContext.Provider, { value: parentDepth + 1 }, children);
 }
 
 // useKeyState ¿
