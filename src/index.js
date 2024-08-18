@@ -40,12 +40,12 @@ class EventEmitter {
     prioritizedCallbacks.forEach(
       function (fn) {
         fn.apply(this, args)
-      }.bind(this)
+      }.bind(this),
     )
   }
   removeListener(eventName, fn) {
     this._getWeightedEventListByName(eventName).forEach((list) =>
-      list.delete(fn)
+      list.delete(fn),
     )
   }
 }
@@ -270,7 +270,7 @@ function validateRulesMap(map) {
   // Expecting an object
   if (!map || typeof map !== 'object') {
     throw new Error(
-      `useKeyState: expecting an object {key:value<String|Array>} as first parameter.`
+      `useKeyState: expecting an object {key:value<String|Array>} as first parameter.`,
     )
   }
   // Expecting string or array values for each key
@@ -279,14 +279,14 @@ function validateRulesMap(map) {
     const isString = typeof value === 'string'
     if (!isString && !isArray) {
       throw new Error(
-        `useKeyState: expecting string or array value for key ${key}.`
+        `useKeyState: expecting string or array value for key ${key}.`,
       )
     }
     if (isArray) {
       value.forEach((rule) => {
         if (typeof rule !== 'string') {
           throw new Error(
-            `useKeyState: expecting array of strings for key ${key}`
+            `useKeyState: expecting array of strings for key ${key}`,
           )
         }
       })
@@ -401,15 +401,12 @@ export const useKeyState = function (rulesMap = {}, configOverrides = {}) {
   // Must capture state value in a ref because the actual
   // updateKeyState function captures the initial value:
   const stateRef = React.useRef(state)
-  React.useLayoutEffect(() => {
-    stateRef.current = state
-  })
 
   const updateKeyState = React.useCallback(() => {
     const nextState = mapRulesToState(
       rulesMapRef.current,
       stateRef.current,
-      isDown
+      isDown,
     )
     const isEquivalentState = deepEqual(stateRef.current, nextState)
 
@@ -420,6 +417,7 @@ export const useKeyState = function (rulesMap = {}, configOverrides = {}) {
     }
 
     if (!isEquivalentState) {
+      stateRef.current = nextState
       setState(nextState)
     }
   }, [])
@@ -460,7 +458,7 @@ export const useKeyState = function (rulesMap = {}, configOverrides = {}) {
       delete keyMapRef.current[event.code]
       updateKeyState()
     },
-    [updateKeyState]
+    [updateKeyState],
   )
 
   const handleDown = React.useCallback(
@@ -477,7 +475,7 @@ export const useKeyState = function (rulesMap = {}, configOverrides = {}) {
         if (configRef.current.debug) {
           console.log(
             'useKeyState: Ignoring event from input accepting element:',
-            event.code
+            event.code,
           )
         }
         return
@@ -505,7 +503,7 @@ export const useKeyState = function (rulesMap = {}, configOverrides = {}) {
           if (configRef.current.debug) {
             console.log(
               'useKeyState: Ignoring event from repeat key event:',
-              event.code
+              event.code,
             )
           }
         } else {
@@ -524,13 +522,11 @@ export const useKeyState = function (rulesMap = {}, configOverrides = {}) {
       keyMapRef.current[event.code] = true
       updateKeyState()
     },
-    [handleUp, updateKeyState]
+    [handleUp, updateKeyState],
   )
 
   // Mark handlers to help debug callback order
   if (configRef.current.debug) {
-    handleDown.prototype.debugFlag = configRef.current.debug
-    handleUp.prototype.debugFlag = configRef.current.debug
     window.keyStateEventEmitter = eventEmitter
   }
 
