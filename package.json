@@ -13,7 +13,7 @@
   "types": "types/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git@github.com:mcernusca/use-key-state.git"
+    "url": "git+ssh://git@github.com/mcernusca/use-key-state.git"
   },
   "bugs": {
     "url": "https://github.com/mcernusca/use-key-state/issues"
