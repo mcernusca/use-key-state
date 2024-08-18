@@ -3,12 +3,11 @@
   "description": "Keyboard events as values for React (hook)",
   "homepage": "https://use-key-state.mihaicernusca.com",
   "author": "Mihai Cernusca <mcernusca@gmail.com> (http://mihaicernusca.com)",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "license": "MIT",
   "main": "dist/index.js",
   "umd:main": "dist/index.umd.js",
   "module": "dist/index.es.js",
-  "exports": "./dist/index.modern.mjs",
   "source": "src/index.js",
   "types": "types/index.d.ts",
   "repository": {
